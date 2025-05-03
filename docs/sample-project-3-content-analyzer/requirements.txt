@@ -1,0 +1,18 @@
+# Core dependencies
+uagents>=0.6.0
+requests>=2.28.0
+python-dotenv>=1.0.0
+
+# Data processing and analysis
+pandas>=2.0.0
+numpy>=1.24.0
+matplotlib>=3.7.0
+
+# API clients
+google-api-python-client>=2.70.0  # For YouTube API
+python-instagram>=1.5.0  # For Instagram API (unofficial)
+tiktok-api>=0.1.0  # For TikTok API (unofficial)
+
+# Natural language processing (for content analysis)
+nltk>=3.8.0
+scikit-learn>=1.2.0

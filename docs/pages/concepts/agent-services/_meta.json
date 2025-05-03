@@ -1,0 +1,14 @@
+{
+  "agentverse-intro": {
+    "title": "Introduction",
+    "timestamp": true
+  },
+  "agent-hosting": {
+    "title": "Agentverse: My Agents",
+    "timestamp": true
+  },
+  "agent-mail": {
+    "title": "Agentverse: Mailroom / IoT Gateway",
+    "timestamp": true
+  }
+}

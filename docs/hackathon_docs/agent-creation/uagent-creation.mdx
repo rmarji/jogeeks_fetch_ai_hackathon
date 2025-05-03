@@ -1,0 +1,325 @@
+---
+id: uagent-creation
+title: uAgent Creation
+---
+
+# Build and understand uAgents
+
+uAgents is a lightweight Python package designed to help you deploy microservices. These microservices can then be utilized by your AI agents as tools for executing tasks and achieving defined objectives.
+
+## Installing uAgents framework
+
+Fetch.ai's [uAgents Framework](https://pypi.org/project/uagents/) package is a Python library running on Ubuntu/Debian, macOS, and Windows systems.
+
+On your computer, you may need to install:
+
+    - [Python 3.8+](https://www.python.org/downloads/)
+    - [PIP](https://pypi.org/project/pip/) - Python package manager.
+    - [uAgents](https://pypi.org/project/uagents/) library
+
+### Install with Pip
+
+1. Create a directory :
+
+```
+mkdir my_agents_project
+cd my_agents_project
+```
+
+2. Initialize and activate a virtual environment:
+
+```
+python -m venv venv
+```
+
+3. Install Fetch.ai uagents library:
+
+```
+pip install uagents
+```
+
+4. Verify the installation:
+
+```
+pip show uagents
+```
+
+## Create your first uAgent
+
+Once you've installed the uAgents library, it's quite simple to get a minimal use case running.
+
+### The uAgent
+
+1. Create a Python script:
+
+```
+touch my_first_agent.py
+```
+
+2. Import the necessary classes and instantiate your agent:
+
+``` python
+from uagents import Agent, Context
+
+# instantiate agent
+agent = Agent(
+    name="alice",
+    seed="secret_seed_phrase",
+    port=8000,
+    endpoint=["http://localhost:8000/submit"]
+)
+
+# startup handler
+@agent.on_event("startup")
+async def startup_function(ctx: Context):
+    ctx.logger.info(f"Hello, I'm agent {agent.name} and my address is {agent.address}.")
+
+if __name__ == "__main__":
+    agent.run()
+```
+
+    - __Agent parameters__:
+
+        - `name`: Identifies the agent (here, “alice”).
+        - `seed`: Sets a deterministic seed, generating fixed addresses each time.
+        - `port` and `endpoint`: Configure where the agent will be available.
+
+    - __Behavior on startup__:
+
+        The `@agent.on_event("startup")` decorator sets a function that runs as soon as the agent launches. In this sample, the agent logs a message including its name and unique address.
+
+### Run your agent
+
+With your virtual environment activated, run the script:
+
+```
+python my_first_agent.py
+```
+
+#### Sample output
+
+```
+INFO:     [alice]: Registration on Almanac API successful
+INFO:     [alice]: Registering on almanac contract...
+INFO:     [alice]: Registering on almanac contract...complete
+INFO:     [alice]: Agent inspector available at https://Agentverse.ai/inspect/?uri=http%3A//127.0.0.1%3A8000&address=agent1q...
+INFO:     [alice]: Starting server on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     [alice]: Hello, I'm agent alice and my address is agent1q...
+```
+
+## Ways to create uAgents
+
+There are three main ways to create and deploy uAgents, each suited to different needs:
+
+    1. Hosted Agents
+    2. Local Agents
+    3. Mailbox Agents
+
+Understanding these options will help you choose the best setup.
+
+### Hosted Agents
+
+You can create and host agents directly on [Agentverse](https://Agentverse.ai/):
+
+1. Navigate to Agentverse → Agents tab → + New Agent.
+
+![new-agent](/img/uagents/new-agent.png)
+
+2. Choose Blank Agent or Skeleton Agent.
+
+    - From a Blank Agent - You have to code everything.
+    - From a Skeleton Agent - You will get one data model with one decorator each.
+
+    choose __Blank Agent__.
+
+![blank-agent](/img/uagents/blank-agent.png)
+
+3. Provide a name for your new Agent.
+
+<div style={{ textAlign: 'center' }}>
+  <img src="/resources/img/uagents/blank-agent-name.png" alt="tech-stack" style={{ width: '75%', maxWidth: '600px' }} />
+</div>
+
+
+4. After creation, click on the __agent__ and then __Build__ tab to open the embedded code editor.
+
+![blank-agent-created](/img/uagents/blank-agent-created.png)
+
+5. Add your Python code (similar to the first_agent.py example).
+
+![blank-agent-code-start](/img/uagents/blank-agent-code-start.png)
+
+6. Click __Start__ to run the agent; logs appear in the __terminal__ below the editor.
+
+![blank-agent-logs](/img/uagents/blank-agent-logs.png)
+
+:::note
+**Note:** Hosted Agents support the full Python built-in library and specific third-party packages (like `uagents`, `requests`, `openai`, etc.). However, some libraries are restricted for security reasons. If you need additional packages, consider using **Mailbox Agents**.
+:::
+
+#### Supported Libraries on Agentverse:
+
+The Agentverse now provides full Python support! This means that all Hosted Agents will now support the full Python built-in library plus the following packages:
+
+import React from 'react';
+
+<style>
+{`
+  .grid-container {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
+  }
+  .grid-item {
+    padding: 8px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    text-align: center;
+  }
+`}
+</style>
+
+<div className="grid-container">
+  <div className="grid-item">uagents</div>
+  <div className="grid-item">requests</div>
+  <div className="grid-item">cosmpy</div>
+  <div className="grid-item">pydantic</div>
+  <div className="grid-item">uagents-ai-engine</div>
+  <div className="grid-item">MySQLdb</div>
+
+  <div className="grid-item">pymongo</div>
+  <div className="grid-item">bs64</div>
+  <div className="grid-item">faiss-cpu</div>
+  <div className="grid-item">fetchai-babble</div>
+  <div className="grid-item">google-generativeai</div>
+  <div className="grid-item">langchain-anthropic</div>
+
+  <div className="grid-item">langchain-community</div>
+  <div className="grid-item">langchain-core</div>
+  <div className="grid-item">langchain-google-genai</div>
+  <div className="grid-item">langchain-google-vertexai</div>
+  <div className="grid-item">langchain-openai</div>
+  <div className="grid-item">langchain-text-splitters</div>
+
+  <div className="grid-item">langchain</div>
+  <div className="grid-item">nltk</div>
+  <div className="grid-item">openai</div>
+  <div className="grid-item">tenacity</div>
+  <div className="grid-item">unstructured</div>
+  <div className="grid-item">validators</div>
+</div>
+
+<br />
+Once you run an hosted agent, you don't have to bother about it's uptime. It will be always running.
+
+### Local Agents
+
+Local Agents run entirely on your own machine or server, just like the example in `my_first_agent.py`. These agents:
+
+    - Have complete freedom to import any Python library or custom modules.
+    - Can handle events, messages, and tasks continuously.
+    - Are registered on the Almanac contract, allowing them to communicate with other local agents.
+    - Require you to manage uptime, environment dependencies, and scaling if necessary.
+
+:::note
+**Use Case:** Ideal for tasks requiring advanced customization, local file access, or extensive machine learning libraries.
+:::
+
+### Mailbox Agents
+
+When you need to use libraries not allowed by the hosted environment, or you want direct local control while also integrating with Agentverse, you can set up a Mailbox Agent.
+
+A Mailbox Agent runs locally but connects to the Agentverse via a secure channel, enabling interaction with other hosted or local agents. To configure this: 
+
+1. Lets setup a local agent first like we did in the section [here](#the-uagent) but include `mailbox=True`.
+
+```py title="mailbox_agent.py"
+from uagents import Agent, Context, Model
+ 
+class Message(Model):
+    message: str
+ 
+SEED_PHRASE = "put_your_seed_phrase_here"
+ 
+# Now your agent is ready to join the Agentverse!
+agent = Agent(
+    name="alice",
+    port=8000,
+    mailbox=True        
+)
+ 
+# Copy the address shown below
+print(f"Your agent's address is: {agent.address}")
+ 
+if __name__ == "__main__":
+    agent.run()
+```
+
+2. Run the Script
+
+You should get something similar within your terminal output:
+
+```
+INFO:     [Alice]: Starting agent with address: agent1qw8jn3nfl2fyyhe7v4x8pfmsge4hs9zqrqw9eq7h7hluzmd0da8z7j0uacx
+INFO:     [Alice]: Agent inspector available at https://Agentverse.ai/inspect/?uri=http%3A//127.0.0.1%3A8000&address=agent1q0nrj45ah0e53424n9uqc83d9xxs6534jug7j6ka4z6wnrsx7ex2kwx86t4
+INFO:     [Alice]: Starting server on http://0.0.0.0:8002 (Press CTRL+C to quit)
+INFO:     [Alice]: Starting mailbox client for https://Agentverse.ai
+INFO:     [Alice]: Mailbox access token acquired
+INFO:     [Alice]: Registration on Almanac API successful
+INFO:     [Alice]: Registering on almanac contract...
+INFO:     [Alice]: Registering on almanac contract...complete
+```
+
+#### Create a Mailbox in Agentverse
+
+Now that we defined our local Agent and have successfully run it, we can go on and connect it to [Agentverse](https://Agentverse.ai/) via a Mailbox. To do so, make sure your Agent is running. Then, click on the __Local Agent Inspector__ URL provided in your terminal output. You will be redirected towards the Inspector UI and will be able to see multiple details about this local Agent.
+
+Here, click the __Connect__ button. 
+
+![mailbox-connect](/img/uagents/mailbox-connect.png)
+
+You will be presented with 3 different choices: Mailbox, Proxy and Custom. Select Mailbox.
+
+<div style={{ textAlign: 'center' }}>
+  <img src="/resources/img/uagents/mailbox-options.png" alt="tech-stack" style={{ width: '75%', maxWidth: '600px' }} />
+</div>
+
+<div style={{ textAlign: 'center' }}>
+  <img src="/resources/img/uagents/mailbox-done.png" alt="tech-stack" style={{ width: '75%', maxWidth: '600px' }} />
+</div>
+
+You will then see some code details available for the Agent. You do not need to do anything, just click on Finish.
+
+You can see the agent details in the local agents and can try connecting it with other Agentverse agents using the `on_message` handler.
+
+
+<!-- ### Proxy Agents
+
+Now do you remember, we cannot local agents with the Agentverse agents. If you want to so we can add proxy parameter. 
+
+A Proxy serves as a bridge between your Agent and the Agentverse, allowing the Agent to publish interaction data without needing a Mailbox. This setup is particularly beneficial for Agents requiring continuous operation and visibility in the [Agentverse Marketplace](https://Agentverse.ai/).
+
+Consider the following basic Agent with a proxy:
+
+```py title="proxy_agent.py"
+from uagents import Agent, Context, Model
+ 
+class Message(Model):
+    message: str
+ 
+# Initialize the agent
+agent = Agent(
+    name="alice",
+    seed="your_agent_seed_phrase",
+    proxy=True
+)
+ 
+# Display the agent's address
+print(f"Your agent's address is: {agent.address}")
+ 
+if __name__ == "__main__":
+    agent.run()
+```
+
+Similar to what we did for [mailbox agents](#create-a-mailbox-in-Agentverse). Select Proxy agent instead of Mailbox and proxy will be setup for agent.
+ -->

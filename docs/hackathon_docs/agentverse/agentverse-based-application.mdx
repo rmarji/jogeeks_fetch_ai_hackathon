@@ -1,0 +1,379 @@
+---
+id: agentverse-based-application
+title: End to End Application with Agentverse Architecture
+---
+
+This diagram depicts an agent-based architecture, where the Client Application interacts with a
+Prime Agent to discover and utilize various specialized Agents registered within the AgentVerse.
+The Prime Agent orchestrates the communication between the Client and the Agents to fulfill
+the client's requests.
+
+
+The flow of the system is as follows:
+    1. The client application searches the AgentVerse to discover available agents.
+    2. The client application sends a request to the Prime Agent.
+    3. The Prime Agent communicates with the AgentVerse to find the appropriate Agent.
+    4. The Prime Agent sends the request to the Agent.
+    5. The Agent processes the request and sends the response back to the Prime Agent.
+    6. The Prime Agent returns the final response to the client application.
+
+This architecture allows for a modular and extensible system, where new agents can be easily
+integrated, and the Prime Agent can orchestrate the interactions between agents to fulfill
+complex client requests.
+
+
+<div style={{ textAlign: 'center' }}>
+  <img src="/resources/img/architecture.png" alt="tech-architecture" style={{ width: '75%', maxWidth: '600px' }} />
+</div>
+
+
+## Core Components and Implementation
+
+The system enables intelligent financial analysis through a team of specialized agents, coordinated via Agentverse. It combines frontend user interaction with backend processing through multiple agent layers.
+
+### 1. React Frontend (Client Application)
+- React-based user interface (OptimusPrime component)
+- Two main API endpoints:
+  - `/api/send-request`: Sends analysis queries
+  - `/api/get-response`: Polls for results
+- Handles message display and user interactions
+
+### 2. Primary Agent (Query Router)
+- **Port**: 5001
+- **Role**: Routes queries to Financial Analysis Agent
+- **Key Functions**:
+  - Discovers Financial Analysis Agent through Agentverse
+  - Forwards user queries
+  - Manages response polling
+- **Endpoints**:
+  - `/webhook`: Receives responses from Financial Agent
+
+### 3. Financial Analysis Agent
+- **Port**: 5008
+- **Role**: Processes financial analysis requests
+- **Components**:
+  - Supervisor Agent: Coordinates analysis
+  - Search Agent: Handles market research
+  - SEC Analyst: Processes SEC filings
+- **Tools**:
+  - RAG System for document analysis
+  - Tavily Search for market data
+
+### 4. Agentverse Integration
+- **Agent Discovery**: Allows finding agents by capability
+- **Agent Registry**: Manages agent registration and lookup
+- **Message Routing**: Handles inter-agent communication
+
+## Communication Flow
+
+1. User submits query through React UI
+2. Primary Agent searches for Financial Analysis Agent
+3. Primary Agent forwards query to Financial Agent
+4. Financial Agent processes query using specialist team
+5. Response returns through Agentverse to Primary Agent
+6. Frontend polls Primary Agent for results
+7. Results displayed to user
+
+## Key Implementation Details
+
+### Frontend
+```javascript
+// Sends request and starts polling
+const handleSendMessage = async () => {
+    await fetch('/api/send-request', {...});
+    startPolling();  // Begin checking for response
+};
+```
+
+### Primary Agent
+```python
+# Agent discovery and routing
+def find_financial_agent():
+    available_ais = fetch.ai("Financial Analysis Agent")
+    return available_ais.get('ais', [0])
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    message = parse_message_from_agent(data)
+    primary_agent.latest_response = message.payload
+```
+
+### Financial Agent registration with Agentverse
+```python
+# Agent registration
+register_with_agentverse(
+    identity=financial_identity,
+    url="http://localhost:5008/webhook",
+    agent_title="Financial Analysis Agent",
+    readme="..."  # Capabilities description
+)
+```
+
+# Detailed Implementation Details
+
+## 1. Frontend Implementation (React)
+
+### Message Handling and UI State
+
+```javascript
+const OptimusPrime = () => {
+    const [messages, setMessages] = useState([]);
+    const [inputText, setInputText] = useState('');
+    const [isProcessing, setIsProcessing] = useState(false);
+
+    // Handles submitting new messages
+    const handleSendMessage = async () => {
+        if (!inputText.trim() || isProcessing) return;
+
+        // Add user message to UI
+        const userMessage = {
+            type: 'user',
+            content: inputText,
+            timestamp: new Date().toLocaleTimeString()
+        };
+        setMessages(prev => [...prev, userMessage]);
+        setInputText('');
+        setIsProcessing(true);
+
+        try {
+            // Send request to primary agent
+            
+            await fetch('/api/send-request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ input: inputText }),
+            });
+
+
+            // Start polling for response
+            startPollingForResponse();
+        } catch (error) {
+            handleError(error);
+        }
+    };
+```
+
+### Response Polling System
+```javascript
+    // Polls for agent response
+    const startPollingForResponse = () => {
+        const pollInterval = setInterval(async () => {
+            try {
+                const responseData = await fetch('/api/get-response');
+                const data = await responseData.json();
+
+                if (data.status !== 'waiting' && data.analysis_result) {
+                    clearInterval(pollInterval);
+                    setIsProcessing(false);
+
+                    // Process agent responses
+                    data.analysis_result.analysis.forEach(response => {
+                        setMessages(prev => [...prev, {
+                            type: 'agent',
+                            agentName: response.name || 'Agent',
+                            content: response.content,
+                            timestamp: new Date().toLocaleTimeString()
+                        }]);
+                    });
+                }
+            } catch (error) {
+                clearInterval(pollInterval);
+                setIsProcessing(false);
+                handleError(error);
+            }
+        }, 1000);
+    };
+```
+
+## 2. Primary Agent Implementation
+
+### Agent Setup and Initialization
+```python
+class PrimaryAgent:
+    def __init__(self):
+        self.identity = None
+        self.latest_response = None
+    
+    def initialize(self):
+        try:
+            # Initialize agent identity
+            self.identity = Identity.from_seed(
+                os.getenv("PRIMARY_AGENT_KEY"), 
+                0
+            )
+            
+            # Register with Agentverse
+            register_with_agentverse(
+                identity=self.identity,
+                url="http://localhost:5001/webhook",
+                agentverse_token=os.getenv("AGENTVERSE_API_KEY"),
+                agent_title="Financial Query Router",
+                readme="<description>Routes queries to Financial Analysis Agent</description>"
+            )
+        except Exception as e:
+            logger.error(f"Initialization error: {e}")
+            raise
+```
+
+### Financial Agent Discovery and Communication
+```python
+    def find_financial_agent(self):
+        """Find registered financial analysis agent"""
+        try:
+            # Search for financial agent in Agentverse
+            available_ais = fetch.ai("Financial Analysis Agent")
+            agents = available_ais.get('ais', [])
+            
+            if agents:
+                logger.info(f"Found financial agent at address: {agents[0]['address']}")
+                return agents[0]
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error finding financial agent: {e}")
+            return None
+
+    @app.route('/api/send-request', methods=['POST'])
+    def send_request():
+        try:
+            # Extract user query
+            data = request.json
+            user_input = data.get('input')
+            
+            # Find and validate financial agent
+            agent = primary_agent.find_financial_agent()
+            if not agent:
+                return jsonify({"error": "Financial analysis agent not available"}), 404
+            
+            # Forward request to financial agent
+            send_message_to_agent(
+                primary_agent.identity,
+                agent['address'],
+                {"request": user_input}
+            )
+            
+            return jsonify({"status": "request_sent"})
+            
+        except Exception as e:
+            logger.error(f"Error processing request: {e}")
+            return jsonify({"error": str(e)}), 500
+```
+
+### Response Management
+```python
+    @app.route('/webhook', methods=['POST'])
+    def webhook():
+        try:
+            # Parse incoming agent message
+            data = request.get_data().decode("utf-8")
+            message = parse_message_from_agent(data)
+            
+            # Store response for polling
+            primary_agent.latest_response = message.payload
+            
+            return jsonify({"status": "success"})
+            
+        except Exception as e:
+            logger.error(f"Error in webhook: {e}")
+            return jsonify({"error": str(e)}), 500
+
+    @app.route('/api/get-response', methods=['GET'])
+    def get_response():
+        try:
+            if primary_agent.latest_response:
+                response = primary_agent.latest_response
+                primary_agent.latest_response = None
+                return jsonify(response)
+            return jsonify({"status": "waiting"})
+        except Exception as e:
+            logger.error(f"Error getting response: {e}")
+            return jsonify({"error": str(e)}), 500
+```
+
+## 3. Financial Analysis Agent Registration 
+
+### Agent Registration and Setup
+```python
+def init_agent():
+    """Initialize and register the agent with agentverse"""
+    global financial_identity, research_chain
+    try:
+        # Initialize the research chain
+        research_chain = init_financial_system()
+        
+        # Initialize identity and register with Agentverse
+        financial_identity = Identity.from_seed(
+            os.getenv("FINANCIAL_AGENT_KEY"), 
+            0
+        )
+        
+        # Register with detailed capabilities description
+        register_with_agentverse(
+            identity=financial_identity,
+            url="http://localhost:5008/webhook",
+            agentverse_token=os.getenv("AGENTVERSE_API_KEY"),
+            agent_title="Financial Analysis Agent",
+            readme = """
+                <description>A comprehensive financial analysis agent that combines 
+                SEC filing analysis with real-time market data for Apple Inc.</description>
+                <use_cases>
+                    <use_case>Get detailed revenue analysis from SEC filings</use_case>
+                    <use_case>Analyze risk factors from latest 10-K</use_case>
+                    <use_case>Track financial metrics and trends</use_case>
+                </use_cases>
+                <payload_requirements>
+                    <payload>
+                        <requirement>
+                            <parameter>query</parameter>
+                            <description>What would you like to know about Apple's financials?</description>
+                        </requirement>
+                    </payload>
+                </payload_requirements>
+            """
+        )
+```
+
+### Query Processing and Response
+```python
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    try:
+        # Parse incoming message
+        data = request.get_data().decode('utf-8')
+        message = parse_message_from_agent(data)
+        query = message.payload.get("request", "")
+        agent_address = message.sender
+
+        # Validate query
+        if not query:
+            return jsonify({"status": "error", "message": "No query provided"}), 400
+
+        # Process query using research chain
+        result = research_chain.invoke({
+            "messages": [HumanMessage(content=query)],
+            "team_members": ["Search", "SECAnalyst"]
+        })
+
+        # Format response for client
+        formatted_result = {
+            "analysis": [
+                {
+                    "role": msg.type if hasattr(msg, 'type') else "message",
+                    "content": msg.content,
+                    "name": msg.name if hasattr(msg, 'name') else None
+                }
+                for msg in result.get('messages', [])
+            ]
+        }
+
+        # Send response back through Agentverse
+        send_message_to_agent(
+            financial_identity,
+            agent_address,
+            {'analysis_result': formatted_result}
+        )
+        return jsonify({"status": "analysis_sent"})
+
+    except Exception as e:
+        logger.error(f"Error in webhook: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500

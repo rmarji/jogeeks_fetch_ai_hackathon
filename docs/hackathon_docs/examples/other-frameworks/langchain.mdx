@@ -1,0 +1,575 @@
+---
+id: langchain
+title: Langchain Agent
+---
+
+# Getting a langchain tool on Agentverse Marketplace
+
+This document is a comprehensive guide to help users integrate __LangChain__ tools into __Fetch.ai's__ ecosystem using the provided __Alphavantage Agent__ and __User Agent scripts__. These agents work together to fetch stock prices and demonstrate how LangChain tools can interact seamlessly with Agentverse agents.
+
+## Overview
+
+### Purpose
+
+The purpose of this script is to:
+    - __Use LangChain integration__ to fetch stock prices from the Alpha Vantage API.
+    - __Demonstrate communication__ between agents within the Fetch.ai Agentverse.
+    - __Provide__ a clear example of webhook-based communication.
+
+### Key Features
+
+    - The__ Alphavantage Agent__ handles requests for stock prices using the Alpha Vantage API.
+    - The __User Agent__ acts as a client to forward requests and retrieve responses.
+    - Communication is done via __HTTP webhooks__ registered with Fetch.ai’s Agentverse.
+
+### Architecture Diagram
+
+<div style={{ textAlign: 'center' }}>
+  <img src="/resources/img/langchain-tool.png" alt="tech-architecture" style={{ width: '75%', maxWidth: '600px' }} />
+</div>
+
+## Prerequisites
+
+### Environment Setup
+
+    - __Python 3.8__ or higher.
+    - A __virtual environment__ (recommended).
+    - __Flask__ and related libraries installed.
+
+### Required Libraries
+
+Install the necessary libraries using:
+
+```
+pip install flask flask-cors fetchai langchain “flask[async]”
+```
+
+:::note
+**Note:** For more advanced dependency management, consider creating a `requirements.txt` and using `pip install -r requirements.txt`.
+:::
+
+### Environment Variables
+
+Create a `.env` file in the project directory with the following content:
+
+```
+AV_STOCKPRICE_AI_KEY=<your_alpha_vantage_ai_key>
+AGENTVERSE_API_KEY=<your_agentverse_api_key>
+USER_STOCKPRICE_AI_KEY=<your_user_stockprice_ai_key>
+ALPHAVANTAGE_API_KEY=<your_agentverse_api_key>
+```
+
+Replace the placeholders with your respective API keys.
+Sign up for a free API key at [Alpha Vantage](https://www.alphavantage.co/).
+
+## Alphvantage Agent Script
+
+The __Alphavantage Agent__ Script focuses on:
+
+    - __Registering__ with Fetch.ai’s Agentverse.
+    - __Handling requests__ to fetch stock prices.
+    - __Responding__ to the User Agent with stock price data.
+
+### Script Breakdown (stockprice.py)
+
+__Required Libraries__
+
+The script imports the required modules for:
+
+    - __Identity Management__: Fetch.ai’s Identity and registration modules.
+    - __Communication__: Flask for HTTP handling and Fetch.ai’s communication utilities.
+    - __Alpha Vantage API__: LangChain’s `AlphaVantageAPIWrapper`.
+
+```python
+import os
+import logging
+import asyncio
+from uagents_core.crypto import Identity
+from flask import Flask, request, jsonify
+from fetchai.registration import register_with_agentverse
+from fetchai.communication import parse_message_from_agent, send_message_to_agent
+from langchain_community.utilities.alpha_vantage import AlphaVantageAPIWrapper
+```
+
+__Setting Up Logging__
+
+Logging is configured to monitor the agent’s activities:
+
+```python
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+```
+
+__Flask Webhook__
+
+The Flask app is created to handle incoming webhook requests:
+
+```python
+flask_app = Flask(__name__)
+```
+
+__Alpha Vantage Integration__
+
+An instance of the Alpha Vantage wrapper is created:
+
+```python
+alpha_vantage = AlphaVantageAPIWrapper()
+```
+
+__Fetch Stock Price Function__
+
+The get_stock_price function fetches stock prices asynchronously from the Alpha Vantage API:
+
+```python
+async def get_stock_price(symbol):
+    response = alpha_vantage._get_quote_endpoint(symbol)
+    return response['Global Quote']['05. price']
+```
+
+__Webhook Endpoint__
+
+The /webhook route handles requests sent by other agents:
+
+```python
+@flask_app.route('/webhook', methods=['POST'])
+async def webhook():
+    global response
+    global av_identity
+    try:
+        # Parse incoming message
+        data = request.get_data().decode('utf-8')
+        message = parse_message_from_agent(data)
+        symbol = message.payload.get("request", "")
+        agent_address = message.sender
+
+        if not symbol:
+            return jsonify({"status": "error", "message": "No data path provided"}), 400
+
+        price = await get_stock_price(symbol)
+        print(price)
+        payload = {'price': price}
+        send_message_to_agent(av_identity, agent_address, payload)
+        return jsonify({"status": "wiki_content_sent"})
+
+    except Exception as e:
+        logger.error(f"Error in webhook: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+```
+
+__Registering the Agent__
+
+The init_agent function registers the Alphavantage Agent with Fetch.ai’s Agentverse:
+
+```python
+def init_agent():
+   global av_identity
+   try:
+       av_identity = Identity.from_seed(os.getenv("AV_STOCKPRICE_AI_KEY"), 0)
+       register_with_agentverse(
+           identity=av_identity,
+           url="http://localhost:5008/webhook",
+           agentverse_token=os.getenv("AGENTVERSE_API_KEY"),
+           agent_title="Alphavantage Stock Price Langchain tool",
+           # Define the client agent's metadata
+           readme = """
+               <description>This is langchain based alphavantage tool to get the latest stock price for the given symbol.</description>
+               <use_cases>
+                   <use_case>Gives you the stock price of given symbol.</use_case>
+               </use_cases>
+               <payload_requirements>
+               <description>Expects the symbol for which you want stock price for.</description>
+                   <payload>
+                       <requirement>
+                           <parameter>symbol</parameter>
+                           <description>Symbol for which you want to check the stock price?</description>
+                       </requirement>
+                   </payload>
+               </payload_requirements>
+           """
+       )
+       logger.info("Langchain Alphavantage tool agent registered successfully!")
+   except Exception as e:
+       logger.error(f"Error initializing agent: {e}")
+       raise
+```
+
+__Running the Agent__
+
+The Flask server runs on port 5008 to handle requests:
+
+```python
+if __name__ == "__main__":
+    init_agent()
+    flask_app.run(host="0.0.0.0", port=5008, debug=True)
+```
+
+
+## User Agent Script
+
+The User Agent script acts as the client that forwards requests to the Alphavantage Agent and retrieves responses.
+
+### Script Breakdown (user.py)
+
+__Importing Libraries__
+
+The script imports required libraries for Flask, Fetch.ai, and communication:
+
+```python
+from flask_cors import CORS
+from uagents_core.crypto import Identity
+from fetchai import fetch
+from fetchai.registration import register_with_agentverse
+from fetchai.communication import parse_message_from_agent, send_message_to_agent
+import logging
+import os
+from dotenv import load_dotenv
+from flask import Flask, jsonify, request
+```
+
+__Setting Up Logging and Flask__
+
+Logging and Flask are configured similarly to the Alphavantage Agent:
+
+```python
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+app = Flask(__name__)
+CORS(app)
+```
+
+__Initializing the User Agent__
+
+The init_client function initializes and registers the User Agent with Agentverse:
+
+```python
+def init_client():
+   """Initialize and register the client agent."""
+   global client_identity
+   try:
+       # Load the client identity from environment variables
+       client_identity = Identity.from_seed(os.getenv("USER_STOCKPRICE_AI_KEY"), 0)
+       logger.info(f"Client agent started with address: {client_identity.address}")
+
+       # Define the client agent's metadata
+       readme = """
+       <description>Frontend client that tests with Stocks price using alphavantage.</description>
+       <use_cases>
+           <use_case>Sends Request to the AI Agent to check stock price</use_case>
+       </use_cases>
+       <payload_requirements>
+           <description>Expects request which is to be sent to another agent.</description>
+           <payload>
+               <requirement>
+                   <parameter>request</parameter>
+                   <description>This is the request which is to be sent to other agent</description>
+               </requirement>
+           </payload>
+       </payload_requirements>
+       """
+
+       # Register the agent with Agentverse
+       register_with_agentverse(
+           identity=client_identity,
+           url="http://localhost:5002/api/webhook",
+           agentverse_token=os.getenv("AGENTVERSE_API_KEY"),
+           agent_title="User agent for Stock Price check",
+           readme=readme
+       )
+
+       logger.info("Client agent registration complete!")
+
+   except Exception as e:
+       logger.error(f"Initialization error: {e}")
+       raise
+```
+
+__Searching Agents__
+
+The /api/search-agents endpoint allows users to search for available agents:
+
+```python
+# searching the agents which can create dashboard on agentverse
+@app.route('/api/search-agents', methods=['GET'])
+def search_agents():
+   """Search for available dashboard agents based on user input."""
+   try:
+       # Extract user input from query parameters
+       user_query = request.args.get('query', '')
+       if not user_query:
+           return jsonify({"error": "Query parameter 'query' is required."}), 400
+
+       # Fetch available agents based on user query
+       available_ais = fetch.ai(user_query)  # Pass the user query to the fetch.ai function
+       print(f'---------------------{available_ais}----------------------')
+
+       # Access the 'ais' list within 'agents' (assuming fetch.ai returns the correct structure)
+       agents = available_ais.get('ais', [])
+       print(f'----------------------------------{agents}------------------------------------')
+
+       extracted_data = []
+       for agent in agents:
+           name = agent.get('name')  # Extract agent name
+           address = agent.get('address')
+
+           # Append formatted data to extracted_data list
+           extracted_data.append({
+               'name': name,
+               'address': address,
+           })
+
+       # Format the response with indentation for readability
+       response = jsonify(extracted_data)
+       response.headers.add('Content-Type', 'application/json; charset=utf-8')
+       response.headers.add('Access-Control-Allow-Origin', '*')
+       response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+       return response, 200
+
+   except Exception as e:
+       logger.error(f"Error finding agents: {e}")
+       return jsonify({"error": str(e)}), 500
+```
+
+__Sending Data to Alphavantage Agent__
+
+The /api/send-data endpoint forwards stock price requests to the Alphavantage Agent:
+
+```python
+@app.route('/api/send-data', methods=['POST'])
+def send_data():
+   """Send payload to the selected agent based on provided address."""
+   global agent_response
+   agent_response = None
+
+   try:
+       # Parse the request payload
+       data = request.json
+       payload = data.get('payload')  # Extract the payload dictionary
+       agent_address = data.get('agentAddress')  # Extract the agent address
+
+       # Validate the input data
+       if not payload or not agent_address:
+           return jsonify({"error": "Missing payload or agent address"}), 400
+
+       logger.info(f"Sending payload to agent: {agent_address}")
+       logger.info(f"Payload: {payload}")
+
+       # Send the payload to the specified agent
+       send_message_to_agent(
+           client_identity,  # Frontend client identity
+           agent_address,    # Agent address where we have to send the data
+           payload           # Payload containing the data
+       )
+
+       return jsonify({"status": "request_sent", "agent_address": agent_address, "payload": payload})
+
+   except Exception as e:
+       logger.error(f"Error sending data to agent: {e}")
+       return jsonify({"error": str(e)}), 500
+```
+
+
+__Webhook Endpoint__
+
+The /webhook route handles requests sent by other agents:
+
+```python
+# app route to get recieve the messages on the agent
+@app.route('/api/webhook', methods=['POST'])
+def webhook():
+    """Handle incoming messages from the dashboard agent."""
+    global agent_response
+    try:
+        # Parse the incoming webhook message
+        data = request.get_data().decode("utf-8")
+        logger.info("Received response")
+
+        message = parse_message_from_agent(data)
+        agent_response = message.payload
+
+        logger.info(f"Processed response: {agent_response}")
+        return jsonify({"status": "success"})
+
+    except Exception as e:
+        logger.error(f"Error in webhook: {e}")
+        return jsonify({"error": str(e)}), 500
+```
+__Retrieving the Agent's Response__
+
+The /api/get-response endpoint retrieves the response (stock price) from the stocks price Agent and saves it :
+
+```python
+@app.route('/api/get-response', methods=['GET'])
+def get_response():
+    global agent_response
+    try:
+        if agent_response:
+            response = agent_response
+            print(f'stock_price : {response}')
+            agent_response = None  # Clear the response after sending
+            
+            keys = list(response.keys())  # Convert dict_keys to a list
+            first_key = keys[0]           # Get the first key
+            response_final = response.get(first_key, "") 
+            logger.info(f"Got response for the stock price {response_final}")
+            return jsonify({"stock_price": response_final})
+        else:
+            return jsonify({"error": "No storm response available"}), 404
+
+    except Exception as e:
+        logger.error(f"Error creating markdown file: {e}")
+        return jsonify({"error": str(e)}), 500
+```
+
+__Running the agent__
+
+``` python
+# function to start the flask server
+def start_server():
+    """Start the Flask server."""
+    try:
+        # Load environment variables
+        load_dotenv()
+        init_client()
+        app.run(host="0.0.0.0", port=5002)
+    except Exception as e:
+        logger.error(f"Server error: {e}")
+        raise
+
+if __name__ == "__main__":
+    start_server()
+```
+
+## Steps to run Scripts
+
+Follow these steps to get both the Alphavantage Agent and User Agent scripts up and running.
+
+__1. Start the Alphavantage Agent__
+
+Ensure the `AV_STOCKPRICE_AI_KEY` and `AGENTVERSE_API_KEY` values are correctly set in the `.env` file.
+
+#### Run the Alphavantage Agent script
+
+```bash
+python3 av_agent.py
+```
+
+#### Output
+
+```bash
+(my_env) abhi@Fetchs-MacBook-Pro Langchain Tool Example % python3 av_agent.py
+INFO:fetchai:Registering with Almanac API
+INFO:fetchai:Completed registering agent with Agentverse
+INFO:__main__:Langchain Alphavantage tool agent registered successfully!
+ * Serving Flask app 'av_agent'
+ * Debug mode: on
+INFO:werkzeug:WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5008
+INFO:werkzeug:Press CTRL+C to quit
+INFO:werkzeug: * Restarting with stat
+INFO:fetchai:Registering with Almanac API
+INFO:fetchai:Completed registering agent with Agentverse
+INFO:__main__:Langchain Alphavantage tool agent registered successfully!
+```
+
+The agent listens on __port 5008__ for requests.
+
+
+__2. Start the User Agent__
+
+Ensure the `USER_STOCKPRICE_AI_KEY` and `AGENTVERSE_API_KEY` values are correctly set in the `.env` file.
+
+#### Run the User Agent script
+
+```bash
+python3 user_agent.py
+```
+
+#### Output
+
+```bash
+(my_env) abhi@Fetchs-MacBook-Pro Langchain Tool Example % python3 user_agent.py
+INFO:__main__:Client agent started with address: agent1qtyqvwlqgd96jzdcd9yj9nem09j48xel2envjdcnvxpx2nfq0rygwxfg3kv
+INFO:fetchai:Registering with Almanac API
+INFO:fetchai:Completed registering agent with Agentverse
+INFO:__main__:Client agent registration complete!
+ * Serving Flask app 'user_agent'
+ * Debug mode: off
+INFO:werkzeug:WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5002
+ * Running on http://192.168.0.106:5002
+```
+
+### Interacting with the Agents
+
+Once both agents are running, use the following endpoints from another terminal:
+
+__1. Search for Agents__
+
+```bash
+curl -X GET "http://localhost:5002/api/search-agents?query=I%20want%20to%20check%20the%20stock%20price"
+```
+
+__Sample Output__
+
+```bash
+[{"address":"agent1qwkzy0twyd27egqfrcw8m6vdtsz7hrm9leu7jfezzzlgckywj7shytz5kf6","name":"Alphavantage Stock Price Langchain tool"},
+{"address":"agent1qtzp03dh92dldvsmr7v0xxvwcfwnpctftjqwdrqrmfszex0dal7pzapsy8d","name":"User agent for Stock Price check"},
+{"address":"agent1qtnc7ruc63g3n84qczekqc6qwp0e5ayvs3v8e5pae563qrqcf852xlqz2pk","name":"Alphavantage Stock Price Langchain tool"},
+{"address":"agent1qtyqvwlqgd96jzdcd9yj9nem09j48xel2envjdcnvxpx2nfq0rygwxfg3kv","name":"User agent for Stock Price check"},
+{"address":"agent1q05k0g4f90zka3m34zj52sdyqtvvvzyry0lc0sdzcdm2tjllkqeruqhue4z","name":"IL Testing user"},
+{"address":"agent1qtmkpt8lhyx4u2ndzcgr7jkjuuade4ay78yld2ngaghs03z6qve3senwrsa","name":"Penny"},
+{"address":"agent1qtxx79e689zwjlh7m8dsfuv7lyn45d2xapr4p9w2u9axvzm487tzjfwqzdp","name":"Penny"},
+{"address":"agent1qvc0em6vrlr80txaz3ksy7tspzaxl564jwqtaana7exehg0hz7gl6zg0wl0","name":"Penny"},
+{"address":"agent1qw5s6e7mxcd8mp6f2vvunk9rklwnv8ynft43unx77syea4nnskxyj4yk5xq","name":"Penny"},
+{"address":"agent1qwlyun6slk2gy8uxnnmvy35tuw2ftp44wza6yfgw06ca9axlllzaxgj5jut","name":"Penny"}]
+```
+
+__2. Send a Stock Price Request__
+
+```bash
+curl -X POST "http://localhost:5002/api/send-data" \
+-H "Content-Type: application/json" \
+-d '{
+    "payload": {"request": "AAPL"},
+    "agentAddress": "agent1qwkzy0twyd27egqfrcw8m6vdtsz7hrm9leu7jfezzzlgckywj7shytz5kf6"
+}'
+```
+
+__Sample Output__
+
+```bash
+{"agent_address":"agent1qwkzy0twyd27egqfrcw8m6vdtsz7hrm9leu7jfezzzlgckywj7shytz5kf6","payload":{"request":"AAPL"},"status":"request_sent"}
+```
+
+__3. Retrieve the Stock Price Response__
+
+Fetch the stock price response from the User Agent:
+
+```bash
+curl -X GET "http://localhost:5002/api/get-response"
+```
+
+__Sample Output__
+
+```bash
+{"stock_price":"234.4000"}
+```
+
+## Debugging Common Issues
+
+Agent Registration Fails:
+
+    a. Check the .env file for correct API keys.
+
+    b. Ensure the AGENTVERSE_API_KEY is valid.
+
+404 Errors:
+
+    a. Verify that both agents are running on their respective ports (5008 and 5002 in this case).
+
+    b. Double-check the agentAddress in requests.
+
+
+You now have an __Alphavantage Agent__ integrated with the __Fetch.ai Agentverse__ for fetching stock prices via __LangChain__. Feel free to adapt the example to include other APIs, advanced AI features, or additional endpoints.

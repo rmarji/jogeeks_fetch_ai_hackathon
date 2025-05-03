@@ -1,0 +1,313 @@
+---
+id: understanding-agentic-systems
+title: Understanding Agentic Systems
+---
+
+### Common Misconceptions
+
+The term "agent" in AI is overused and often applied inconsistently, diminishing its meaning and creating confusion about the actual capabilities of AI systems. Some of the common misconceptions are explained below:
+
+#### Misconception 1: "My application uses multiple LLM calls, so it's an agent"
+```python
+# This is NOT an agent - it's a multi-step LLM application
+def process_document(doc):
+    summary = llm.generate_summary(doc)
+    keywords = llm.extract_keywords(summary)
+    sentiment = llm.analyze_sentiment(summary)
+    return {
+        "summary": summary,
+        "keywords": keywords,
+        "sentiment": sentiment
+    }
+```
+
+#### Misconception 2: "I'm using tools and APIs, so it's an agent"
+```python
+# This is NOT an agent - it's an automated workflow
+def analyze_stock(symbol):
+    price_data = stock_api.get_price(symbol)
+    news = news_api.get_recent_news(symbol)
+    analysis = llm.analyze(f"Price: {price_data}, News: {news}")
+    return analysis
+```
+
+
+#### Misconception 3: "Having memory makes it an agent"
+```python
+# This is NOT an agent - just stateful LLM interaction
+class ChatSystem:
+    def __init__(self):
+        self.conversation_history = []
+    
+    def respond(self, user_input):
+        self.conversation_history.append(user_input)
+        response = llm.generate(context=self.conversation_history)
+        self.conversation_history.append(response)
+        return response
+```
+
+#### Misconception 4: "Using planning means its an agent"
+```python
+# This is NOT an agent - it's structured task decomposition
+def handle_task(task):
+    # Fixed planning template
+    steps = llm.break_down_task(task)
+    results = []
+    for step in steps:
+        result = execute_step(step)
+        results.append(result)
+    return combine_results(results)
+```
+
+#### Misconception 4: "Complex prompt engineering makes it an agent"
+```python
+# This is NOT an agent - just sophisticated prompting
+def analyze_with_cot(query):
+    prompt = f"""
+    Step 1: Understand the query
+    {query}
+    Step 2: Break down the components
+    Step 3: Analyze each component
+    Step 4: Synthesize findings
+    """
+    return llm.generate(prompt)
+```
+
+#### Misconception 5: "Having a feedback loop makes it an agent"
+```python
+# This is NOT an agent - just iterative refinement
+def iterative_response(query, max_iterations=3):
+    response = initial_response(query)
+    for _ in range(max_iterations):
+        quality = evaluate_response(response)
+        if quality > threshold:
+            break
+        response = improve_response(response)
+    return response
+```
+
+
+#### Misconception 6: "The LLM performs the actions in an agent"
+```python
+# Common MISCONCEPTION: People think this actually performs actions
+def incorrect_understanding():
+    llm_response = llm.generate("Please save this file to disk")
+    # The LLM can't actually save files!
+    
+# REALITY: Tools perform actions, LLM orchestrates
+class PropertyAgent:
+    def __init__(self):
+        self.tools = {
+            'database': DatabaseTool(),
+            'email': EmailTool(),
+            'calendar': CalendarTool()
+        }
+    
+    def handle_request(self, query):
+        # LLM determines what needs to be done
+        action_plan = llm.plan_actions(query)
+        
+        # TOOLS actually perform the actions
+        for action in action_plan:
+            if action.type == "schedule_viewing":
+                # Calendar tool performs the actual scheduling
+                self.tools['calendar'].create_appointment(action.details)
+            elif action.type == "send_confirmation":
+                # Email tool performs the actual sending
+                self.tools['email'].send_message(action.details)
+```
+
+### Key Points About LLM's Role
+
+1. **LLM's Actual Functions:**
+   - Planning and strategizing actions
+   - Reasoning about which tools to use
+   - Interpreting results from tools
+   - Generating natural language responses
+   
+2. **Tools' Actual Functions:**
+   - File operations
+   - Database queries
+   - API calls
+   - Network requests
+   - System modifications
+   - Real-world interactions
+
+```python
+# Clear separation of responsibilities
+class AgentSystem:
+    def process_task(self, task):
+        # LLM PLANS the action
+        plan = self.llm.create_execution_plan(task)
+        
+        # TOOLS EXECUTE the action
+        for step in plan:
+            if step.requires_web_access:
+                result = self.web_tool.fetch_data(step.url)
+            elif step.requires_database:
+                result = self.db_tool.query(step.sql)
+            elif step.requires_file_operation:
+                result = self.file_tool.process(step.path)
+                
+            # LLM INTERPRETS results and plans next steps
+            next_actions = self.llm.analyze_results(result)
+```
+
+This misconception is particularly important because it helps explain:
+- Why tool integration is crucial for practical agent systems
+- Why agents need careful permission and capability management
+- The importance of proper tool abstraction and safety measures
+- Why LLM responses alone can't perform real-world actions
+
+<div style={{ textAlign: 'center' }}>
+   <img src="/resources/img/id-images/llm-vs-tools-light.png" alt="comparison" style={{ width: '100%', maxWidth: '900px' }} />
+</div>
+
+This diagram illustrate several key points:
+
+1. **Separation of Responsibilities**
+   - LLM handles planning, reasoning, and decision-making
+   - Tools perform actual real-world actions
+   - Clear boundaries between thinking and doing
+
+2. **Flow of Control**
+   - User requests flow through the LLM first
+   - LLM determines which tools to use
+   - Tools execute actions and return results
+   - LLM interprets results and plans next steps
+
+3. **Real World Impact**
+   - Only tools can affect the external world
+   - LLM provides intelligence but not execution
+   - Actions are constrained by available tools
+
+This helps explain why:
+- Tool integration is crucial for practical agent systems
+- Security and permissions must be implemented at the tool level
+- LLM capabilities alone don't enable real-world actions
+- System design must carefully consider tool access and limitations
+
+
+#### Misconception 7:"My AI Assistant/AI chatbot  is an AI Agent"
+```python
+# This is NOT an agent - it's an AI Assistant
+class BasicAIAssistant:
+    def chat(self, user_input):
+        response = llm.generate_response(user_input)
+        return response
+
+# This is CLOSER to an agent
+class AIAgent:
+    def __init__(self):
+        self.tools = load_available_tools()
+        self.memory = AgentMemory()
+        self.planner = ActionPlanner()
+        
+    def handle_task(self, task):
+        # Autonomous decision making
+        goal = self.planner.define_goal(task)
+        plan = self.planner.create_plan(goal)
+        
+        # Dynamic tool selection and execution
+        while not goal.is_achieved():
+            next_action = self.planner.next_action(plan)
+            tool = self.select_tool(next_action)
+            result = tool.execute(next_action.parameters)
+            
+            # Adaptive behavior
+            if not result.is_successful():
+                plan = self.planner.revise_plan(result)
+            
+            self.memory.update(result)
+```
+
+However, sometimes as we discussed in chapter 1, AI assistants could have certain level of Agentic behavior depending on how they are implemented.
+### Key Differences:
+
+1. **Autonomy Level**
+   - Assistant: Responds to direct commands and questions
+   - Agent: Makes autonomous decisions about how to achieve goals
+
+2. **Tool Usage**
+   - Assistant: May have access to tools but uses them as instructed
+   - Agent: Autonomously decides which tools to use and when
+
+3. **Goal Orientation**
+   - Assistant: Focuses on responding to immediate requests
+   - Agent: Maintains and works toward longer-term goals
+
+4. **Memory Usage**
+   - Assistant: May maintain conversation history
+   - Agent: Uses memory strategically for goal achievement
+
+5. **Decision Making**
+   - Assistant: Makes limited decisions within conversation scope
+   - Agent: Makes complex decisions about actions, strategy, and resource use
+
+### Example Task Comparison:
+
+```python
+# Research Task Example
+
+# AI Assistant Approach:
+async def assistant_research(query):
+    """Responds to direct questions with available information"""
+    response = await llm.generate(
+        f"Please research about {query}"
+    )
+    return response
+
+# AI Agent Approach:
+async def agent_research(query):
+    """Autonomously conducts comprehensive research"""
+    plan = await self.create_research_plan(query)
+    sources = []
+    
+    for step in plan:
+        if step.type == "web_search":
+            results = await self.tools.search(step.query)
+            sources.extend(results)
+        elif step.type == "verify_information":
+            verified_data = await self.tools.fact_check(results)
+        elif step.type == "synthesize":
+            synthesis = await self.tools.analyze(verified_data)
+            
+        # Adaptive planning
+        if self.evaluate_progress() < self.quality_threshold:
+            plan = await self.revise_research_plan()
+    
+    return self.compile_research(sources, synthesis)
+```
+
+This misconception is particularly important because:
+1. It affects system design expectations
+2. It influences how we evaluate AI system capabilities
+3. It impacts how we implement security and permissions
+4. It shapes user expectations and interaction patterns
+
+<div style={{ textAlign: 'center' }}>
+   <img src="/resources/img/id-images/agent-assistant-light.png" alt="comparison" style={{ width: '100%', maxWidth: '900px' }} />
+</div>
+
+These diagrams highlight the key differences between AI Assistants and AI Agents:
+
+1. **Architecture Complexity**
+   - Assistant: Simple, linear flow with reactive tool usage
+   - Agent: Complex system with multiple interacting components
+
+2. **Processing Flow**
+   - Assistant: Direct input → response pattern
+   - Agent: Multi-step process with planning and feedback loops
+
+3. **Tool Integration**
+   - Assistant: Passive, explicitly requested tool usage
+   - Agent: Active, autonomous tool selection and execution
+
+4. **Memory Usage**
+   - Assistant: Basic conversation tracking
+   - Agent: Sophisticated memory system for context and learning
+
+5. **Decision Making**
+   - Assistant: Reactive decisions based on immediate input
+   - Agent: Proactive decisions based on goals and strategy
+

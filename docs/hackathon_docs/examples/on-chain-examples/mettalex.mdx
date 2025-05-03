@@ -1,0 +1,55 @@
+---
+id: mettalex-agents
+title: Mettalex - A Practical Implementation of AI Agents in the Web3 Ecosystem
+---
+
+# Mettalex: A Practical Implementation of AI Agents in the Web3 Ecosystem - Powered by Fetch.ai Agent Tech
+
+## Introduction
+
+[Mettalex](https://www.mettalex.ai/) stands out as the __first P2P orderbook__ and __agent-based DEX__ for commodity and digital (tokenized) assets trading. It harnesses __Fetch.ai’s uAgents__ to power __autonomous order matching__, __secure on-chain escrow__, and __cross-chain operations__. By eliminating reliance on centralized order books or liquidity pools, Mettalex aims to offer __slippage-free__, trustless trades with __maximum transparency__. 
+
+Key uAgents features in this use case include their __wallet- and chain-agnostic__ capabilities. Additionally, the agents provide a robust __communication__ and __execution__ layer, making the trading process seamless and efficient.
+
+## Mettalex: Agent-Based Commodity Trading in a Nutshell
+
+1. Direct P2P Order Matching
+
+    - __No Liquidity Pools:__ Mettalex uses uAgents to match buyers and sellers directly, eliminating AMMs and reducing slippage.
+    - __Zero Slippage Execution:__ Final prices match exactly what each party has agreed to—crucial for volatile or low-liquidity commodity markets.
+
+2. Escrow-Backed Settlement
+
+    - __On-Chain Escrow:__ Traders lock funds in a smart contract. The agent only completes a trade if both sides have met the exact terms.
+    - __Fail-Safe Mechanism:__ If either side fails to finalize the transaction, agents revert the escrow to protect user funds.
+
+3. Multi-Wallet & Cross-Chain Support
+
+    - __Wallet-Agnostic:__ Users may use MetaMask, Ledger, or any Web3-compatible wallet. The agent logic remains the same, ensuring a uniform trading experience.
+    - __Chain-Agnostic:__ Mettalex agents can run on multiple blockchains in parallel (e.g., Ethereum, BNB Chain, Cosmos). They coordinate escrow locks and trades across networks if bridging solutions exist.
+
+4. On-Chain Registration & Discovery
+
+    - __Almanac Registry:__ Agents register on a Cosmos-based on-chain Almanac contract, allowing other agents/dApps to verify their identity.
+
+5. Transparent Execution & Governance
+
+    - __Public Transaction Logs:__ Every escrow creation, signature, and fund release is recorded on-chain. Users can view agent logs and track progress in real time.
+    - __MTLX Governance:__ Mettalex’s governance token (MTLX) can let agents automate fee changes or protocol upgrades, broadening the platform’s agent-driven ecosystem.
+
+## Putting It All Together
+
+<div style={{ textAlign: 'center' }}>
+  <img src="/resources/img/mettalex-architecture.png" alt="mettalex-architecture" style={{ width: '100%', maxWidth: '900px' }} />
+</div>
+
+    - User places a trade -> Funds locked in escrow.
+    - Agent checks buyer/seller positions -> Confirms each side’s escrow.
+    - Agents sign trade parameters on-chain -> Escrows release funds upon successful match.
+    - Settlement -> Both parties receive respective assets with no slippage and full transparency.
+
+If you wish to learn more about Mettalex, please visit [Mettalex Docs](https://www.mettalex.com/docs).
+
+:::note
+**Note:** To try out [Mettalex public beta system](https://beta.mettalex.com/), where you can see the AI agent (built using Fetch agent tech) in action.
+:::

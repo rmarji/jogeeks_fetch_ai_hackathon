@@ -1,0 +1,214 @@
+---
+id: team-based-architectures
+title: Team Based Artchitectures
+---
+
+### Multi-agent Systems
+An agent uses an LLM to control application flow. However, as systems grow complex, using a single agent can become challenging. This is where multi-agent systems come in.
+
+### Why Use Multiple Agents?
+- **Simplicity**: Break complex tasks into manageable pieces
+- **Expertise**: Create specialized agents for specific tasks
+- **Better Control**: Manage how agents work together
+
+### Common Multi-agent Patterns
+1. **Network Pattern**
+   * Agents can communicate freely with every other agent
+   * Any agent can decide which other agent to call next
+   * Flexible but potentially complex to manage
+
+2. **Supervisor Pattern**
+   * Central supervisor coordinates other agents
+   * Clear control flow through supervisor
+   * Better oversight and management
+   * Can be implemented through tool-calling
+
+3. **Hierarchical Pattern**
+   * Supervisors of supervisors
+   * Allows for more complex control flows
+   * Suitable for large-scale systems
+
+4. **Custom Workflow Pattern**
+   * Agents communicate with specific subset of agents
+   * Parts of flow are deterministic
+   * Limited decision-making about which agents to call next
+
+
+We will build our agent using a supervisor based multi-agent pattern.
+
+
+### Supervisor-Based Agent Architecture
+
+A team-based architecture typically consists of three main components:
+
+1. **Supervisor Agent**
+   - Coordinates team activities
+   - Makes routing decisions
+   - Ensures task completion
+
+2. **Specialist Agents**
+   - Handle domain-specific tasks
+   - Maintain focused expertise
+   - Provide detailed analysis
+
+3. **State Management System**
+   - Maintains conversation context
+   - Tracks team progress
+   - Manages shared resources
+
+
+<div style={{ textAlign: 'center' }}>
+   <img src="/resources/img/id-images/supervisor-architecture-light.png" alt="comparison" style={{ width: '100%', maxWidth: '900px' }} />
+</div>
+
+
+### Implementation Pattern  
+The code implements a team-based architecture using langgraph with three essential components that work together to process complex tasks:
+
+#### 1. Supervisor Agent 
+```python
+def create_supervisor_agent(llm: ChatOpenAI):
+    """Creates a supervisor agent that orchestrates the team's activities.
+    
+    The supervisor agent is the core decision-maker that:
+    1. Analyzes incoming queries to understand requirements
+    2. Determines which specialist agent is best suited for each subtask
+    3. Routes tasks to appropriate specialists
+    4. Monitors the overall progress of the task
+    5. Decides when enough information has been gathered
+    
+    Args:
+        llm: Language model for decision making
+        
+    Returns:
+        A supervisor agent configured with team coordination capabilities
+    """
+    supervisor_prompt = """
+    Core responsibilities:
+    1. Analyze incoming queries to break down complex tasks
+    2. Determine what specific information is needed
+    3. Select the most appropriate specialist for each subtask
+    4. Monitor progress and ensure task completion
+    5. Decide when sufficient information has been gathered
+    """
+    
+    return create_team_supervisor(
+        llm=llm,
+        system_prompt=supervisor_prompt,
+        members=["SpecialistA", "SpecialistB"]
+    )
+```
+
+#### 2. Specialist Agents
+```python
+def create_specialist_agent(
+    llm: ChatOpenAI,
+    domain: str,
+    tools: List[Tool]
+):
+    """Creates a specialist agent with domain-specific expertise.
+    
+    Specialist agents are focused experts that:
+    1. Handle specific types of tasks within their domain
+    2. Use specialized tools for their domain
+    3. Provide structured analysis and insights
+    4. Request clarification when needed
+    
+    Args:
+        llm: Language model for domain-specific processing
+        domain: Area of expertise (e.g., "financial analysis", "market research")
+        tools: List of domain-specific tools available to this specialist
+        
+    Returns:
+        A specialist agent configured for its specific domain
+    """
+    system_prompt = f"""
+    You are specialized in {domain}.
+    When responding:
+    1. Use your domain-specific tools effectively
+    2. Provide clearly structured outputs
+    3. Explicitly request any missing information needed
+    """
+    
+    return create_agent(
+        llm=llm,
+        tools=tools,
+        system_prompt=system_prompt
+    )
+```
+
+#### 3. State Management
+```python
+class TeamState(TypedDict):
+    """Manages the shared state and context for the entire team.
+    
+    Attributes:
+        messages: List of all messages in the conversation history
+        team_members: List of available specialist agents
+        next: Identifier of the next agent to act
+        information_needed: List of missing information to be gathered
+        reasoning: Explanation for the current decision or action
+    """
+    messages: List[BaseMessage]
+    team_members: List[str]
+    next: str
+    information_needed: List[str]
+    reasoning: str
+```
+
+
+### Team Graph Implementation
+
+The team graph orchestrates how all components work together:
+
+```python
+def create_team_graph():
+    """Creates a coordinated team of agents with defined interaction patterns.
+    
+    The graph defines:
+    1. How agents communicate with each other
+    2. The flow of information between agents
+    3. Decision points for task routing
+    4. Conditions for task completion
+    
+    Process Flow:
+    1. Supervisor receives task and analyzes requirements
+    2. Tasks are routed to appropriate specialists
+    3. Specialists process tasks and return results
+    4. Supervisor evaluates results and decides next steps
+    5. Process continues until task is complete
+    
+    Returns:
+        A compiled graph ready for task processing
+    """
+    # Initialize team members
+    specialist_a = create_specialist_agent(...)
+    specialist_b = create_specialist_agent(...)
+    supervisor = create_supervisor_agent(...)
+    
+    # Create the coordination graph
+    graph = StateGraph(TeamState)
+    
+    # Define team structure
+    graph.add_node("SpecialistA", specialist_a)
+    graph.add_node("SpecialistB", specialist_b)
+    graph.add_node("supervisor", supervisor)
+    
+    # Define information flow
+    graph.add_edge("SpecialistA", "supervisor")
+    graph.add_edge("SpecialistB", "supervisor")
+    
+    # Set up decision routing
+    graph.add_conditional_edges(
+        "supervisor",
+        lambda x: x["next"],
+        {
+            "SpecialistA": "SpecialistA",
+            "SpecialistB": "SpecialistB",
+            "FINISH": END
+        }
+    )
+    
+    return graph.compile()
+```
+

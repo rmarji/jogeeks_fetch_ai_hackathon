@@ -1,0 +1,315 @@
+---
+id: foundation-core-concepts
+title: Foundation Core Concepts
+---
+
+### Introduction to AI Agents
+
+In the rapidly evolving landscape of artificial intelligence, AI agents represent a significant advancement over traditional software applications, offering more flexibility, adaptability, and intelligence in tackling complex tasks across various domains. 
+
+At their core, agents are software entities designed to perform autonomous actions by:
+1. Observing their environment through various inputs (digital or physical)
+2. Processing, analyzing, and reasoning about information using advanced algorithms and large language models
+3. Making decisions and taking actions, often by leveraging external tools and APIs
+4. Learning from outcomes and adapting their behavior over time
+5. Utilizing memory to retain information and improve performance
+6. Engaging in self-reflection, evaluation, and course correction
+ 
+### The Evolution of AI Systems
+
+To understand AI agents, it's crucial to recognize the progression of AI systems:
+
+1. **Traditional Applications**
+   - Fixed logic and predefined rules
+   - Limited or no adaptation
+   - Direct input-to-output mapping
+   - Example : Rule-based expert systems 
+
+2. **AI-Enhanced Applications**
+   - Foundation model integration (LLMs, neural networks)
+   - Task-specific intelligence, guided learning abilities, Human-directed operations
+   - Limited context awareness
+   - Example : Modern Chatbots, Specialized AI tools (image generators, coding assistants like cursor,windsurf)
+
+3. **Agentic Systems**
+   - Capable of taking autonomous decisions with or without human in the loop
+   - Multi-step planning and execution
+   - Dynamic tool discovery and usage, self-directed learning, continuous context awareness
+   - Example : Operator released by OpenAI, Manus AI, Self-driving cars
+
+### Understanding System Types
+
+AI systems can be categorized into two primary types:
+1. **AI Workflows:** These are predefined sequences where LLMs and other tools are orchestrated using explicit code paths. They follow structured logic and operate with a defined start and end point.
+2. **AI Agents:** These are more dynamic, allowing LLMs to take control of their processes and tool usage, making autonomous decisions on how to accomplish a task.
+
+While the term "AI agent" is often used interchangeably, many practical applications don't need full agentic behavior. Instead, structured workflows are sufficient for most tasks, offering better control and predictability.
+### Agentic Workflow and Degree of Autonomy
+
+Since full autonomy is neither possible (in majority of the systems) nor needed in most practical applications, the term 'Agentic Workflow' is gaining popularity as it combines the benefits of structured workflows with the flexibility of AI agents. This hybrid approach allows for more dynamic decision-making within a controlled framework, striking a balance between autonomy and predictability.
+
+Agentic workflows represent a middle ground where AI agents operate within defined processes but have the ability to make decisions and adapt to changing circumstances. They leverage the strengths of both AI workflows and agents by:
+
+1. Providing a structured sequence of tasks for consistency and control
+2. Allowing AI agents to make autonomous decisions within these sequences
+3. Enabling dynamic problem-solving and adaptation to complex scenarios
+4. Maintaining oversight and predictability for critical business processes
+
+This approach is particularly useful for tasks that require some level of flexibility but still need to operate within certain boundaries or comply with specific rules. As businesses seek to optimize their operations while managing risks, agentic workflows offer a practical solution that combines the efficiency of automation with the intelligence of AI agents.
+
+The term 'AI agent' is widely used in the industry and by startups, often without a clear, universal definition. In practice, the autonomy of these so-called agents falls on a spectrum rather than being a binary classification. There is no definitive technical measure of autonomy, which leads to varying interpretations and implementations across different systems.
+<br/> <br/>
+
+This spectrum of autonomy can range from:
+
+1. Highly structured workflows with minimal decision-making capabilities
+2. Semi-autonomous systems that can make decisions within predefined parameters
+3. More flexible agents that can adapt their approach based on context
+4. Highly autonomous systems that can formulate and pursue their own goals within a given domain
+
+The degree of autonomy granted to an AI system often depends on factors such as:
+
+- The complexity of the task
+- The potential risks involved
+- The need for human oversight
+- The capabilities of the underlying AI technologies
+
+As the field evolves, we may see more standardized ways to measure and describe the level of autonomy in AI systems. For now, it's important to understand that when someone claims to use 'AI agents', the actual level of autonomy can vary significantly, and it's crucial to delve deeper into the specific capabilities and limitations of each system.
+
+This nuanced understanding of autonomy reinforces the value of agentic workflows, as they offer a flexible framework that can accommodate various degrees of AI decision-making while maintaining necessary control structures.
+
+### Three Pillars of Agentic Workflows
+
+The effectiveness of agentic workflows is based on three key elements.
+1. **Autonomy**: Handling tasks with minimal human input.
+2. **Adaptability**: Adjusting to unique business needs and changing conditions.
+3. **Optimization**: Continuously improving through machine learning.
+
+### Implementation Challenges
+
+While the benefits are significant, it's important to note that implementing and managing these workflows can be complex. This complexity reinforces the need for a nuanced approach to autonomy and careful consideration of the specific use case and organizational context.
+
+
+
+#### AI Workflow
+- Combine LLMs with predefined processes
+- Follow structured but flexible paths
+- Best for: Complex but predictable tasks where:
+    - Process steps are well-understood and consistent
+    - Predictability is more important than flexibility
+    - You need tight control over execution
+    - Performance and reliability are crucial
+- Example:
+  ```python
+  # AI workflow example
+  class StockAnalysisWorkflow:
+      def analyze(self, stock_symbol):
+          # Uses LLM but in FIXED order:
+          # Always: price → news → recommendation
+          # Can't skip steps or change order
+          
+          price_analysis = llm.analyze(f"Analyze {stock_symbol} price trends")
+          news_analysis = llm.analyze(f"Analyze {stock_symbol} recent news")
+          return llm.recommend(price_analysis, news_analysis)
+  ```
+
+#### AI Agents
+- Dynamically direct their own processes
+- Maintain control over task execution
+- Best for: Dynamic planning, adaptive execution, goal-oriented behavior where:
+    - Tasks require dynamic decision-making
+    - Problems have multiple valid solution paths
+    - Flexibility and adaptation are crucial
+    - Complex tool interactions are needed
+    - Tasks benefit from maintaining context
+- Example:
+  ```python
+  # AI agent example
+  class StockAnalysisAgent:
+      def analyze(self, stock_symbol):
+          # LLM DECIDES everything:
+          # - What to analyze first (price? news? competitors?)
+          # - Whether to dig deeper into any area
+          # - When analysis is sufficient
+          # Can adapt strategy based on what it finds
+          
+          strategy = llm.decide(f"How should we analyze {stock_symbol}?")
+          while not self.analysis_complete():
+              next_step = llm.decide("What should we analyze next?")
+              findings = self.execute_step(next_step)
+              if findings.need_different_approach:
+                  strategy = llm.revise_strategy(findings)
+  ```
+
+The core difference is that AI agents have:
+
+ **Genuine Autonomy**
+   - Not just following predefined steps with decision points
+   - Actually reasoning about what actions to take
+   - Ability to discover and adapt strategies
+
+ **Strategic Flexibility**
+   - Can handle unexpected situations
+   - Doesn't just choose from predefined options
+   - Creates novel approaches to problems
+
+**Contextual Understanding**
+   - Understands the implications of its actions
+   - Can reason about tool capabilities
+   - Maintains meaningful context about its goals and progress
+
+**Dynamic Goal Management**
+   - Can reformulate goals when needed
+   - Understands when to abandon or modify objectives
+   - Can handle competing or conflicting goals
+
+
+### Core Components of an Agent
+
+A generic agent architecture, consists of several key components:
+
+<div style={{ textAlign: 'center' }}>
+   <img src="/resources/img/id-images/Agent-concepts-light.png" alt="comparison" style={{ width: '100%', maxWidth: '1000px' }} />
+</div>
+
+#### 1. Model Layer
+- Central decision-making engine
+- Processes input and context
+- Generates reasoning and plans
+
+#### 2. Orchestration Layer
+- Manages the execution flow
+- Coordinates tool usage
+- Monitors progress towards goals
+
+#### 3. Memory System
+- Short-term working memory
+- Long-term knowledge storage
+- Context retention
+
+#### 4. Tool Integration
+- External API connections
+- Data processing capabilities
+- Action execution interfaces
+
+
+   
+<div style={{ textAlign: 'center' }}>
+   <img src="/resources/img/id-images/Agent-runtime-environment-light.png" alt="comparison" style={{ width: '100%', maxWidth: '650px' }} />
+</div>
+
+This diagram shows a more detailed "Agent Runtime Environment" with three main layers that work together:
+
+ **Orchestration Layer (Top)**
+   - Contains the high-level control components:
+     - Profile & Goals: Defines the agent's objectives and constraints
+     - Memory System: Implements both short and long-term memory
+     - Reasoning Engine: Coordinates decision-making and orchestrates the flow between components
+
+**Tools Layer (Middle)**
+   - Breaks down tool integration into three specific categories:
+     - API Tools: Interfaces for external API connections
+     - Data Processing: Tools for handling and transforming data
+     - External Services: Integration with third-party services
+   - This layer implements the "Tool Integration" component from the core architecture
+
+**Model Layer (Bottom)**
+   - Contains three specialized components:
+     - Large Language Model: The foundation model for understanding and generation
+     - Planning System: Handles task decomposition and strategy
+     - Response Generation: Manages the creation of outputs
+
+The arrows in the diagram show the information flow:
+- The Orchestration Layer controls the overall process flow
+- The Tools Layer acts as an intermediary between orchestration and models
+- There's a feedback loop from the Model Layer back to the Orchestration Layer, showing how the system can iteratively refine its responses
+
+This implementation provides more concrete details about how the four core components (Model, Orchestration, Memory, and Tools) work together in a practical system.
+
+
+### General Criteria for Agency
+
+Before implementing an agent, evaluate if your system really needs true agency by checking these criteria:
+
+**Decision Autonomy**
+   - Can the system choose different paths based on context?
+   - Does it make meaningful decisions about tool usage?
+   - Can it adapt its strategy during execution?
+
+ **State Management**
+   - Does it maintain meaningful state?
+   - Can it use past interactions to inform decisions?
+   - Does it track progress toward goals?
+
+ **Tool Integration**
+   - Can it choose tools dynamically?
+   - Does it understand tool capabilities?
+   - Can it combine tools in novel ways?
+
+ **Goal Orientation**
+   - Does it understand and work toward specific objectives?
+   - Can it recognize when goals are achieved?
+   - Can it adjust goals based on new information?
+
+### ReAct Pattern
+The simplest AI agents typically operate using the ReAct (Reason-Action) framework, which follows a cyclical pattern. ReAct is an iterative approach that alternates between thinking and acting, combining the reasoning capabilities of large language models (LLMs) with the ability to interact with external tools and environments. The core workflow includes:
+
+1. **Reasoning (Thought)**: The agent analyzes the current state, objectives, and available information.
+2. **Acting (Action)**: Based on its reasoning, the agent executes specific operations or uses tools.
+3. **Observation**: The agent obtains results from its actions.
+4. **Iteration**: The cycle continues, with the agent thinking and acting based on new observations until reaching a final answer.
+
+<div style={{ textAlign: 'center' }}>
+   <img src="/resources/img/id-images/ReAct-framework-light.png" alt="comparison" style={{ width: '100%', maxWidth: '900px' }} />
+</div>
+
+#### Key Components:
+
+1. **Thought**: 
+   - Internal reasoning about the current state and objectives
+   - Analysis of available information
+   - Planning next steps and formulating strategies
+
+2. **Action**: 
+   - Execution of chosen steps
+   - Tool usage and integration (e.g., calculators, search engines, APIs)
+   - Interaction with external systems or environments
+
+3. **Observation**: 
+   - Gathering results from actions
+   - Analyzing outcomes
+   - Updating understanding and knowledge base
+
+4. **Iteration**: 
+   - Continuous loop of Thought-Action-Observation
+   - Dynamic adjustment of plans based on new information
+   - Progress towards final goal or answer
+
+#### Implementation and Best Practices:
+
+1. **Prompt Engineering**: Craft a clear system prompt that defines the agent's behavior and available tools.
+
+2. **Tool Integration**: Provide the agent with access to relevant external tools and APIs to expand its capabilities.
+
+3. **Memory Management**: Implement a mechanism for the agent to retain and utilize information from previous steps.
+
+4. **Error Handling**: Design the system to gracefully handle unexpected inputs or tool failures.
+
+5. **Performance Optimization**: Balance the number of reasoning steps with action execution to maintain efficiency.
+
+### Advantages of ReAct:
+
+- Combines internal knowledge with external information gathering
+- Enables complex problem-solving through iterative reasoning and action
+- Improves transparency and interpretability of AI decision-making
+- Allows for dynamic adaptation to new information and changing scenarios
+
+### Applications:
+
+ReAct has shown promise in various domains, including:
+- Question answering systems
+- Task planning and execution
+- Data analysis and interpretation
+- Decision-making in complex environments
+
+By implementing the ReAct pattern, developers can create more versatile and capable AI agents that can handle a wide range of tasks requiring both reasoning and interaction with external resources.

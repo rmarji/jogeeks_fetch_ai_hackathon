@@ -1,0 +1,366 @@
+---
+id: agent-chat-protocol
+title: Agent Chat Protocol
+---
+
+# Agent Chat Protocol
+
+The Agent Chat Protocol is a standardized communication framework that enables agents to exchange messages in a structured and reliable manner. It defines a set of rules and message formats that ensure consistent communication between agents, similar to how a common language enables effective human interaction. This guide demonstrates how to implement and utilize this protocol in your agents.
+
+
+## Understanding the Chat Protocol 
+
+The chat protocol consists of several key components that work together to enable reliable communication between agents. Let's explore each component:
+
+### 1. Core Models 
+
+#### TextContent
+```python
+class TextContent(Model):
+    type: Literal['text']
+    text: str
+```
+- Basic content type for text messages
+- Uses `Literal['text']` to ensure type safety
+- `text` field stores the actual message content
+
+#### Resource and ResourceContent
+```python
+class Resource(Model):
+    uri: str
+    metadata: dict[str, str]
+
+class ResourceContent(Model):
+    type: Literal['resource']
+    resource_id: UUID4
+    resource: Resource | list[Resource]
+```
+- `Resource`: Represents external resources (files, images, etc.)
+  - `uri`: Location of the resource
+  - `metadata`: Additional resource information
+- `ResourceContent`: Wraps resources in messages
+  - `resource_id`: Unique identifier for tracking
+  - `resource`: Single or multiple resources
+
+#### Metadata Types
+```python
+class Metadata(TypedDict):
+    mime_type: str
+    role: str
+
+class MetadataContent(Model):
+    type: Literal['metadata']
+    metadata: dict[str, str]
+```
+- `Metadata`: Defines resource metadata structure
+  - `mime_type`: Resource type (e.g., "text/plain")
+  - `role`: Resource's purpose in communication
+- `MetadataContent`: For sending metadata-only messages
+
+### 2. Session and Stream Management
+
+#### Session Control
+```python
+class StartSessionContent(Model):
+    type: Literal['start-session']
+
+class EndSessionContent(Model):
+    type: Literal['end-session']
+```
+- Manages chat session lifecycle
+- `StartSessionContent`: Initiates new sessions
+- `EndSessionContent`: Properly terminates sessions
+
+#### Stream Control
+```python
+class StartStreamContent(Model):
+    type: Literal['start-stream']
+    stream_id: UUID4
+
+class EndStreamContent(Model):
+    type: Literal['start-stream']
+    stream_id: UUID4
+```
+- Handles continuous data streams
+- `stream_id`: Unique identifier for stream tracking
+
+
+### 3. Agent Content Type 
+
+```python
+AgentContent = (
+    TextContent
+    | ResourceContent
+    | MetadataContent
+    | StartSessionContent
+    | EndSessionContent
+    | StartStreamContent
+    | EndStreamContent
+)
+```
+- Combines all possible content types
+- Ensures type safety in message content
+
+### 4. Message Types
+
+#### ChatMessage
+```python
+class ChatMessage(Model):
+    timestamp: datetime
+    msg_id: UUID4
+    content: list[AgentContent]
+```
+- Primary message type for communication
+- `timestamp`: When message was sent (UTC)
+- `msg_id`: Unique message identifier
+- `content`: List of content elements discussed above.
+
+#### ChatAcknowledgement
+```python
+class ChatAcknowledgement(Model):
+    timestamp: datetime
+    acknowledged_msg_id: UUID4
+    metadata: dict[str, str] | None = None
+```
+- Confirms message receipt
+- `acknowledged_msg_id`: References original message
+- Optional metadata for additional information
+
+
+### 5. Message Handlers
+
+```python
+@protocol.on_message(ChatMessage)
+async def handle_message(_ctx: Context, sender: str, msg: ChatMessage):
+    print('I got a chat message', sender, msg)
+
+@protocol.on_message(ChatAcknowledgement)
+async def handle_ack(_ctx: Context, sender: str, msg: ChatAcknowledgement):
+    print('I got a chat acknowledgement', sender, msg)
+```
+- Process incoming messages
+- Handle acknowledgments
+
+## Using the Chat Protocol
+
+To implement the chat protocol in your agents, you can import all the above components from the `uagents_core` package:
+
+```python
+from uagents_core.contrib.protocols.chat import (
+    ChatMessage,
+    ChatAcknowledgement,
+    TextContent,
+    chat_protocol_spec
+)
+```
+
+## Basic Message Flow
+
+The protocol follows a simple request-response pattern with acknowledgments:
+
+1. Agent A sends a `ChatMessage` to Agent B
+2. Agent B sends a `ChatAcknowledgement` back to Agent A
+3. Agent B can then send a `ChatMessage` response to Agent A
+4. Agent A sends a `ChatAcknowledgement` back to Agent B
+
+
+
+<div style={{ textAlign: 'center' }}>
+  <img src="/resources/img/chat-protocol/chat-protocol-flow.png" alt="comparison" style={{ width: '85%', maxWidth: '600px' }} />
+</div>
+
+
+Let's create two agents on [Agentverse](https://agentverse.ai/) that communicate using the chat protocol. Refer to the [Hosted Agents](/docs/agent-creation/uagent-creation#hosted-agents) section to understand the detailed steps for agent creation on Agentverse.
+
+### Agent1 Script
+
+```python title='agent1.py'
+from datetime import datetime
+from uuid import uuid4
+from uagents import Agent, Protocol, Context, Model
+from time import sleep
+
+#import the necessary components from the chat protocol
+from uagents_core.contrib.protocols.chat import (
+    ChatAcknowledgement,
+    ChatMessage,
+    TextContent,
+    chat_protocol_spec,
+)
+
+# Intialise agent1
+agent1 = Agent()
+
+# Store agent2's address (you'll need to replace this with actual address)
+agent2_address = "agent1qf8n9q8ndlfvphmnwjzj9p077yq0m6kqc22se9g89y5en22sc38ck4p4e8d"
+
+# Initialize the chat protocol
+chat_proto = Protocol(spec=chat_protocol_spec)
+
+
+#Startup Handler - Print agent details and send initial message
+@agent1.on_event("startup")
+async def startup_handler(ctx: Context):
+    # Print agent details
+    ctx.logger.info(f"My name is {ctx.agent.name} and my address is {ctx.agent.address}")
+    
+    # Send initial message to agent2
+    initial_message = ChatMessage(
+        timestamp=datetime.utcnow(),
+        msg_id=uuid4(),
+        content=[TextContent(type="text", text="Hello from Agent1!")]
+    )
+    
+    await ctx.send(agent2_address, initial_message)
+
+# Message Handler - Process received messages and send acknowledgements
+@chat_proto.on_message(ChatMessage)
+async def handle_message(ctx: Context, sender: str, msg: ChatMessage):
+    for item in msg.content:
+        if isinstance(item, TextContent):
+            # Log received message
+            ctx.logger.info(f"Received message from {sender}: {item.text}")
+            
+            # Send acknowledgment
+            ack = ChatAcknowledgement(
+                timestamp=datetime.utcnow(),
+                acknowledged_msg_id=msg.msg_id
+            )
+            await ctx.send(sender, ack)
+            
+            # Send response message
+            response = ChatMessage(
+                timestamp=datetime.utcnow(),
+                msg_id=uuid4(),
+                content=[TextContent(type="text", text="Hello from Agent1!")]
+            )
+            await ctx.send(sender, response)
+
+# Acknowledgement Handler - Process received acknowledgements
+@chat_proto.on_message(ChatAcknowledgement)
+async def handle_acknowledgement(ctx: Context, sender: str, msg: ChatAcknowledgement):
+    ctx.logger.info(f"Received acknowledgement from {sender} for message: {msg.acknowledged_msg_id}")
+
+
+
+# Include the protocol in the agent to enable the chat functionality
+# This allows the agent to send/receive messages and handle acknowledgements using the chat protocol
+agent1.include(chat_proto, publish_manifest=True)
+
+if __name__ == '__main__':
+    agent1.run()
+```
+
+### Agent2 Script
+
+```python title='agent2.py'
+from datetime import datetime
+from uuid import uuid4
+from uagents import Agent, Protocol, Context
+
+#import the necessary components from the chat protocol
+from uagents_core.contrib.protocols.chat import (
+    ChatAcknowledgement,
+    ChatMessage,
+    TextContent,
+    chat_protocol_spec,
+)
+# Initialise agent2
+agent2 = Agent()
+
+# Initialize the chat protocol
+chat_proto = Protocol(spec=chat_protocol_spec)
+
+
+# Startup Handler - Print agent details
+@agent2.on_event("startup")
+async def startup_handler(ctx: Context):
+    # Print agent details
+    ctx.logger.info(f"My name is {ctx.agent.name} and my address is {ctx.agent.address}")
+
+# Message Handler - Process received messages and send acknowledgements
+@chat_proto.on_message(ChatMessage)
+async def handle_message(ctx: Context, sender: str, msg: ChatMessage):
+    for item in msg.content:
+        if isinstance(item, TextContent):
+            # Log received message
+            ctx.logger.info(f"Received message from {sender}: {item.text}")
+            
+            # Send acknowledgment
+            ack = ChatAcknowledgement(
+                timestamp=datetime.utcnow(),
+                acknowledged_msg_id=msg.msg_id
+            )
+            await ctx.send(sender, ack)
+            
+            # Send response message
+            response = ChatMessage(
+                timestamp=datetime.utcnow(),
+                msg_id=uuid4(),
+                content=[TextContent(type="text", text="Hello from Agent2!")]
+            )
+            await ctx.send(sender, response)
+
+# Acknowledgement Handler - Process received acknowledgements
+@chat_proto.on_message(ChatAcknowledgement)
+async def handle_acknowledgement(ctx: Context, sender: str, msg: ChatAcknowledgement):
+    ctx.logger.info(f"Received acknowledgement from {sender} for message: {msg.acknowledged_msg_id}")
+
+# Include the protocol in the agent to enable the chat functionality
+# This allows the agent to send/receive messages and handle acknowledgements using the chat protocol
+agent2.include(chat_proto, publish_manifest=True)
+
+if __name__ == '__main__':
+    agent2.run()
+```
+
+
+### Running the Agents
+
+To run the example, you'll need to:
+
+1. Start Agent2 first:
+![Start-Agent-2](/img/chat-protocol/start-agent2.png)
+
+
+2. Copy Agent2's address from the startup logs and update it in Agent1's script
+![Agent-Address](/img/chat-protocol/agent-address.png)
+
+
+3. Start Agent1:
+![Start-Agent-1](/img/chat-protocol/start-agent1.png)
+
+
+### Expected Output
+
+When running both agents, you should see output similar to:
+
+Agent2 Logs
+
+![Agent2-Logs](/img/chat-protocol/agent2-logs.png)
+
+
+Agent1 Logs
+
+![Agent1-Logs](/img/chat-protocol/agent2-logs.png)
+
+
+This guide demonstrates the communication via chat protocol between two agents hosted on [Agentverse](https://agentverse.ai/). If you wish to run these agents on your local machine instead, you'll need to initialize the agents with specific ports and endpoints:
+
+```python
+# For agent1
+agent1 = Agent(
+    name="agent1",
+    port=8000,
+    endpoint=["http://localhost:8000/submit"]
+)
+
+# For agent2
+agent2 = Agent(
+    name="agent2",
+    port=8001,
+    endpoint=["http://localhost:8001/submit"]
+)
+```
+
+To learn more about setting up and running agents locally, refer to the [Local Agents](/docs/agent-creation/uagent-creation) section of our documentation.

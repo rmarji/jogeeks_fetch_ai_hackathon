@@ -1,0 +1,59 @@
+---
+id: agent-comparison
+title: Microservices and AI Agents
+---
+
+# Fetch.ai Microservice Agent and AI Agent
+
+Before diving into the world of AI agents, let’s first explore the key differences between microservices and AI agents.
+
+    - __Microservice__: If you want to fetch specific information or perform an isolated action, you typically use tools or APIs—this is known as a microservice. Imagine you want to check available flights from London to New York. You’d use an API or tool to fetch the available options. That’s a microservice in action—focused, specific, and task-oriented.
+
+    - __AI Agent__: If you have a larger objective that requires coordination between multiple microservices or tools, that’s where an AI agent steps in. Now, let’s say you want to book the best possible flight. This involves more than just checking flight options: you’ll compare prices across different days, check your personal schedule, and evaluate additional services like baggage policies or meal preferences. To achieve this goal, you need reasoning and decision-making capabilities—this is where an AI agent comes into play.
+
+## Building Microservices and AI Agents
+
+The Fetch.ai ecosystem offers a variety of tools to build both microservices and AI agents, enabling developers to cater to different use cases.
+
+<div style={{ textAlign: 'center' }}>
+  <img src="/resources/img/comparison.svg" alt="comparison" style={{ width: '85%', maxWidth: '600px' }} />
+</div>
+
+### Microservices with uAgents
+
+uAgents is Fetch.ai's lightweight Python framework for creating agents (microservices). It’s designed to be simple and efficient, making it a great choice for building basic microservices.
+
+### AI Agents with the Fetch.ai SDK
+
+Fetch.ai's SDK is built on top of the uAgents framework. It simplifies the creation of intelligent, dynamic AI agents that can interact with other agents and microservices seamlessly. The SDK allows for more flexibility, reasoning, and adaptability compared to uAgents.
+
+You’ll learn in the upcoming sections how to decide between these tools based on the problem you’re solving.
+
+## How Fetch.ai’s Ecosystem Works
+
+Fetch.ai provides an integrated ecosystem to host and manage your agents, ensuring connectivity and scalability.
+
+1. __Agentverse Platform__:
+    - Agents can be hosted on the Agentverse platform, allowing them to stay active and accessible.
+    - Due to security constraints, Agentverse only supports a limited set of packages.
+
+2. __Mailbox Service__:
+    - For scenarios requiring custom environments (like virtual machines), you can use the Mailbox Service. This lets you host agents outside Agentverse while maintaining connectivity.
+    - The mailbox ensures that messages sent to an agent are queued, so the agent can process them once it comes online.
+
+3. __Agent Registration with the Almanac Contract__:
+    - When agents are registered on Agentverse, they are also listed in the Almanac Contract on Fetch.ai’s blockchain. This registry allows other agents to discover your agent using its unique address.
+
+## Why Use the Fetch.ai SDK?
+
+While the uAgents framework is sufficient for basic microservices, the Fetch.ai SDK offers additional capabilities suited for more complex AI agents. Here’s why the SDK exists:
+
+    - Dynamic Messaging:
+        - uAgents require precise Data Models to identify and process messages. In contrast, the SDK enables agents to handle dynamic messages, making it more adaptable.
+    - Handler Differences:
+        - uAgents rely on predefined handlers (e.g., interval-based or message-based handlers).
+        - SDK-based agents leverage Flask webhooks, enabling more flexible and scalable communication.
+
+With these distinctions, the SDK empowers developers to build agents capable of reasoning, adaptability, and complex decision-making.
+
+

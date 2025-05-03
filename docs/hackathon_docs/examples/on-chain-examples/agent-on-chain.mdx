@@ -1,0 +1,65 @@
+---
+id: on-chain-agents
+title: AI Agents Reshaping the On-Chain Ecosystem
+---
+
+## Introduction
+
+AI agents—particularly Fetch.ai’s __uAgents__ and __SDK agents__—are autonomous participants in blockchain networks that respond to __on-chain events__, __manage digital assets__, and __facilitate multi-chain interactions__ . By removing the need for centralized intermediaries or continuous human oversight, these agents transform standard on-chain flows into dynamic, intelligent services.
+
+## Why AI Agents Matter On-Chain
+
+1. Autonomous Execution
+
+    - AI agents listen for on-chain triggers (e.g., token transfers, contract calls, governance proposals).
+    - Once triggered, agents can execute trades, re-balance liquidity, or vote on proposals in real-time—without waiting for human confirmation.
+
+2. Enhanced Security & Trustlessness
+
+    - Because all agent actions (like escrow setup, fund releases, or cross-chain swaps) occur on-chain, everything is __transparent__ and __auditable__.
+    - Agents follow __immutable__ contract rules, ensuring no single party can hijack the process.
+
+3. Chain- & Wallet-Agnostic
+
+    - **Chain-Agnostic** : AI agents can run across multiple blockchains—Ethereum, Binance Smart Chain, Cosmos-based networks, or any EVM-compatible chain. They can coordinate cross-chain actions in a unified manner.
+    - **Wallet-Agnostic** : Users aren’t tied to a specific wallet solution (e.g., MetaMask, Keplr, Phantom). Agents interface with any wallet, enabling broad user adoption and frictionless onboarding.
+
+4. Flexibility & Extensibility
+
+    - Developers can tailor an agent’s logic to handle **DeFi strategies, governance proposals, NFT auctions,** or **P2P trades**.
+    - Agents can integrate external oracles, off-chain data APIs, and bridging protocols, evolving beyond single-blockchain constraints.
+
+5. Scalable, Efficient Workflows
+
+    - By delegating tasks to AI agents, dApps reduce the time users spend **manually** approving each transaction and gain a more **seamless** on-chain experience.
+    - Agents can auto-manage tasks like yield farming reinvestment or on-chain voting schedules.
+
+## How uAgents make it happen?
+
+1. Registration via Almanac Contract (Cosmos-Based)
+
+    - __Cosmos-Based Registration:__ `uAgents` register themselves on a Cosmos-based chain (using Almanac contract smart contract).
+    - __Immutable Proof of Existence:__ This on-chain registration provides each agent with a __unique__, __verifiable__ identity(address), ensuring that any other uAgents, AI Agents or service or dApps can confirm its authenticity before interacting.
+    - __Decentralized Discovery:__ Other __uAgents__ or __AI Agents__ can query the Almanac contract to __discover__ available agents, making it straightforward to integrate new agents into existing ecosystems.
+
+2. Wallet-Agnostic Architecture
+
+    - __Fetch (ASI Alliance) Wallet Integration__: uAgents come pre-integrated with __Fetch.ai (ASI Alliance) wallets__, but can also work seamlessly with other Web3 wallets like MetaMask, Keplr, or Ledger-based solutions.
+    - __Broad User Adoption:__ Because there’s no hard coupling to a single wallet, end-users don’t have to switch providers or manage multiple accounts—__drastically reducing friction__.
+    - __Secret Management:__ Agents handle private keys or other secrets in a secure environment , further minimizing the risk of manual errors or security breaches.
+
+3. Chain-Agnostic Operations
+
+    - __Multi-Chain Compatibility:__ Once registered, an `uAgent` can __monitor__ and act on __multiple blockchains__—Ethereum, Binance Smart Chain, Cosmos, Polkadot, and more.
+    - __Event Listening & Execution:__ The agent listens for events (e.g., escrow creation, governance proposal) on any chain it supports. Once triggered, it can respond with an on-chain transaction in that same environment.
+    - __Unified Coordination:__ For cross-chain workflows, an agent can coordinate matching orders or bridging logic across networks, which is critical for advanced DeFi or NFT scenarios.
+
+4. Identifiable by Address or AName
+
+    - __Unique Agent Address:__ Each uAgent is identifiable by a standard address (agent1.....) which can be used to communicate to other agents on Fetch.ai blockchain.
+    - __AName (Human-Readable Handle):__ The Fetch.ai Name Service Smart Contract can also map a human-friendly name (AName) to an agent’s address. 
+
+5. Extensibility & Custom Logic
+
+    - __Plugin System:__ Developers can embed specialized routines—DeFi yield strategies, NFT auction logic, commodity order matching—within the agent.
+    - __Off-Chain Integration:__ Because each agent can also pull data from oracles or external APIs (e.g., price feeds, weather data), it’s easy to create autonomous, data-driven behaviors that integrate seamlessly with on-chain contracts.

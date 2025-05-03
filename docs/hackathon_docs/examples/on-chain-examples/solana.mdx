@@ -1,0 +1,549 @@
+---
+id: solana-agents
+title: Solana Agent Integration with Fetch.ai uAgents
+---
+
+This example shows how to integrate Solana wallets within __Fetch.ai’s uAgents__ framework. We’ll walk through the __EscrowAgent, PlayerAgent, and ChallengerAgent__ scripts, detailing how each agent:
+
+    1. Registers with the __Almanac__ contract (for discoverability)
+    2. Loads Solana __private keys__ from environment variables
+    3. Executes transfers, checks balances, and handles bet-based business logic via __Solana Devnet__
+    4. Communicates with other agents through __uAgents__ messaging
+
+## Prerequisites
+
+    - __Solana CLI__ (configured to Devnet)
+    - __Poetry__ (for dependency management)
+    - __Python 3.8+__
+    - Fetch.ai’s __uagents__ library
+    - __Solders, requests__, etc. (handled by `poetry install`)
+    - `.env` with your Solana private keys (Base64 arrays) for each agent
+
+:::note
+**Note:** Each agent script runs on a different port—EscrowAgent uses `:8000`, PlayerAgent uses `:8001`, and ChallengerAgent uses `:8002` by default.
+:::
+
+## High-Level Architecture
+
+
+<div style={{ textAlign: 'center' }}>
+  <img src="/resources/img/solana-integration.png" alt="mettalex-architecture" style={{ width: '90%', maxWidth: '1000px'}} />
+</div>
+
+
+1. __PlayerAgent__ & __ChallengerAgent__ each place a bet by transferring SOL to the __Escrow__ wallet (managed by the EscrowAgent).
+2. __EscrowAgent__ collects two bets, checks the BTC price via an external API, and decides a winner.
+90% of the total stake is transferred to the winner’s Solana wallet; the loser forfeits.
+
+
+## Escrow Agent
+
+### Overview
+
+The __EscrowAgent__:
+
+    - Registers on __Almanac__ so other agents (Player/Challenger) can discover it
+    - Waits for two __escrowRequest__ messages
+    - Fetches __BTC price from Binance__
+    - __Transfers__ the correct portion of __SOL__ to the winner
+
+
+### Script Breakdown
+
+__Required Libraries__
+
+```python
+import os
+import base58
+import ast
+from uagents import Agent, Context, Model
+from solders.keypair import Keypair
+from functions import get_latest_btc_price, transfer_sol
+import time
+```
+
+    - os & ast for environment handling
+    - uagents for agent creation
+    - solders.keypair for Solana KeyPair
+    - functions for helper utilities (price fetch & SOL transfer)
+
+__Key Classes & Models__
+
+```python
+class escrowRequest(Model):
+    amount: float
+    price: float
+    public_key: str
+
+class escrowResponse(Model):
+    result: str
+```
+
+    - __escrowRequest__ holds the user’s desired bet: `amount`, `price`, and the user’s __Solana public key__.
+    - __escrowResponse__ returns the result to the user: either `"You Won"` or `"You Lost"`.
+
+__Initialization & Identity__
+
+```python
+# Retrieve ESCROW_SECRET_LIST from the .env
+escrow_secret_key_str = os.getenv('ESCROW_SECRET_LIST')
+escrow_secret_key_list = ast.literal_eval(escrow_secret_key_str)
+escrow_secret_key_bytes = bytes(escrow_secret_key_list)
+escrow_keypair = Keypair.from_bytes(escrow_secret_key_bytes)
+escrow_pubkey_base58 = base58.b58encode(bytes(escrow_keypair.pubkey())).decode('utf-8')
+
+agent = Agent(
+    name="EscrowAgent",
+    port=8000,
+    seed="Escrow Wallet",
+    endpoint=["http://127.0.0.1:8000/submit"],
+)
+```
+
+    - We decode the __Solana private key__ from `.env`.
+    - Create a `Keypair` for the Escrow’s wallet.
+    - Instantiate a `uagents.Agent` with the name “EscrowAgent” listening on port `8000`.
+
+__On Startup__
+
+```python
+@agent.on_event('startup')
+async def saf(ctx: Context):
+    ctx.logger.info("Escrow agent initialized, ready for bids.")
+    ctx.logger.info(f"Escrow agent address: {agent.address}")
+    ctx.storage.set("bids_count", 0)
+```
+
+    - Logs that the Escrow is online.
+    - Initializes a storage key bids_count=0 to track how many requests have come in.
+
+__Message Handling__
+
+Receiving Bets
+```python
+@agent.on_message(model=escrowRequest, replies={escrowResponse})
+async def escrow_request_handler(ctx: Context, sender: str, msg: escrowRequest):
+    current_count = ctx.storage.get("bids_count") or 0
+    ...
+    if current_count == 0:
+        # Store first bet
+    elif current_count == 1:
+        # Store second bet
+        # Compare
+        # Transfer to winner
+        # Respond with escrowResponse
+        # Reset storage
+```
+
+    - __First Bet:__ If `bids_count=0`, store the details (amount, price, user’s pubkey).
+    - __Second Bet:__ If `bids_count=1`, store the second user’s bet, then call `get_latest_btc_price()`.
+    - Calculate each user’s distance from the real BTC price.
+    - Transfer 90% of the total stake to the winner’s public key with `transfer_sol()`.
+    - Send escrowResponse messages to both the winner `(You Won)` and loser `(You Lost)`.
+    - Reset internal storage.
+
+__Running the EscrowAgent__
+
+```python
+if __name__ == "__main__":
+    agent.run()
+```
+
+    - Save the script as `escrow_agent.py`
+    - Simply run `poetry run python escrow_agent.py`.
+
+
+## Player Agent
+
+### Overview
+
+The __PlayerAgent__ simulates a user placing a bet on BTC’s future price.
+
+
+### Script Breakdown
+
+__Required Libraries__
+```python
+import os
+import ast
+import base58
+from uagents import Agent, Context, Model
+from solders.keypair import Keypair
+from functions import check_balance, transfer_sol
+from uagents.setup import fund_agent_if_low
+check_balance and transfer_sol from functions.py to manage SOL balances/transfers
+fund_agent_if_low from uagents.setup can top up the agent’s fetch-side address if needed
+```
+
+__Key Classes__
+
+```python
+class escrowRequest(Model):
+    amount: float
+    price: float
+    public_key: str
+
+class escrowResponse(Model):
+    result: str
+```
+
+    - Re-used from the Escrow flow: escrowRequest is how we send the user’s bet to the EscrowAgent.
+
+__Initialization & Identity__
+
+```python
+secret_key_str = os.getenv('PLAYER_SECRET_LIST')
+secret_key_list = ast.literal_eval(secret_key_str)
+secret_key_bytes = bytes(secret_key_list)
+agent_keypair = Keypair.from_bytes(secret_key_bytes)
+agent_pubkey_base58 = base58.b58encode(bytes(agent_keypair.pubkey())).decode('utf-8')
+
+agent = Agent(
+    name="PlayerAgent",
+    port=8001,
+    seed="Player Escrow Wallet 1",
+    endpoint=["http://127.0.0.1:8001/submit"],
+)
+```
+
+    - Decodes the __PLAYER_SECRET_LIST__ from `.env`.
+    - Assigns the Player’s Solana wallet keypair.
+    - Sets up a uAgent on port `8001`.
+
+__Startup Sequence__
+
+```python
+@agent.on_event('startup')
+async def starter_function(ctx: Context):
+    initial_balance = check_balance(agent_keypair.pubkey())
+    ctx.logger.info(f"Initial agent balance: {initial_balance} SOL")
+
+    amount = float(input('What is the amount of SOL you want to deposit? '))
+    price = float(input('What is the price of Bitcoin you want to bid at? '))
+
+    # Send bet to Escrow
+    await ctx.send(
+        'agent1qd6ts50kuy3vqq36s5yg2dkzujq60x0l0sr2acfafnp5zea749yvvvq2qm7',
+        escrowRequest(amount=amount, price=price, public_key=agent_pubkey_base58)
+    )
+
+    # Transfer SOL to escrow’s base58 key
+    transfer_result = transfer_sol(agent_keypair, '8WMWFo13At1REkwy5t7ck6sLgCUrJ9dn66mbaccPiJ26', amount)
+    ctx.logger.info(f"Transfer result: {transfer_result}")
+
+    final_balance = check_balance(agent_keypair.pubkey())
+    ctx.logger.info(f"Final agent balance: {final_balance} SOL")
+```
+
+    - __Check initial SOL__ in the user’s wallet.
+    - __Ask__ for deposit & BTC price guess.
+    - __Send__ an `escrowRequest` message to the known Escrow agent address.
+    - `transfer_sol` to the Escrow agent’s public key.
+    - Log final SOL.
+
+__Receiving Escrow Responses__
+
+```python
+@agent.on_message(model=escrowResponse)
+async def escrow_request_handler(ctx: Context, sender: str, msg: escrowResponse):
+    balance = check_balance(agent_keypair.pubkey())
+    ctx.logger.info(f'{msg.result}. Updated account balance: {balance} SOL')
+```
+
+    - When the __EscrowAgent__ decides the outcome, it sends an `escrowResponse`.
+    - This handler logs either “You Won” or “You Lost” plus the updated balance.
+
+__Running PlayerAgent__
+```python
+if __name__ == "__main__":
+    agent.run()
+```
+    - Save the script as `player_agent.py`
+    - Run with poetry `run python player_agent.py`.
+
+
+## Challenger Agent
+
+### Overview
+
+Nearly identical to `player_agent.py`, but simulates another user (Challenger) placing a competing bet.
+
+
+### Script Breakdown
+
+__Required Libraries__
+```python
+import os
+import ast
+import base58
+from uagents import Agent, Context, Model
+from solders.keypair import Keypair
+from functions import check_balance, transfer_sol
+from uagents.setup import fund_agent_if_low
+```
+
+__Key Classes__
+
+```python
+class escrowRequest(Model):
+    amount: float
+    price: float
+    public_key: str
+
+class escrowResponse(Model):
+    result: str
+```
+
+__Initialization & Startup__
+
+```python
+secret_key_str = os.getenv('CHALLENGER_SECRET_LIST')
+secret_key_list = ast.literal_eval(secret_key_str)
+secret_key_bytes = bytes(secret_key_list)
+agent_keypair = Keypair.from_bytes(secret_key_bytes)
+agent_pubkey_base58 = base58.b58encode(bytes(agent_keypair.pubkey())).decode('utf-8')
+
+agent = Agent(
+    name="Challenger",
+    port=8002,
+    seed="Challenger Escrow Wallet 2",
+    endpoint=["http://127.0.0.1:8002/submit"],
+)
+
+fund_agent_if_low(agent.wallet.address())
+
+@agent.on_event('startup')
+async def starter_function(ctx: Context):
+    initial_balance = check_balance(agent_keypair.pubkey())
+    ctx.logger.info(f"Initial agent balance: {initial_balance} SOL")
+
+    amount = float(input('What is the amount of SOL you want to deposit? '))
+    price = float(input('What is the price of Bitcoin you want to bid at? '))
+
+    # Send the bet
+    await ctx.send(
+        'agent1qd6ts50kuy3vqq36s5yg2dkzujq60x0l0sr2acfafnp5zea749yvvvq2qm7',
+        escrowRequest(amount=amount, price=price, public_key=agent_pubkey_base58)
+    )
+
+    # Transfer SOL
+    transfer_result = transfer_sol(agent_keypair, '8WMWFo13At1REkwy5t7ck6sLgCUrJ9dn66mbaccPiJ26', amount)
+    ctx.logger.info(f"Transfer result: {transfer_result}")
+
+    final_balance = check_balance(agent_keypair.pubkey())
+    ctx.logger.info(f"Final agent balance: {final_balance} SOL")
+
+@agent.on_message(model=escrowResponse)
+async def escrow_request_handler(ctx: Context, sender: str, msg: escrowResponse):
+    balance = check_balance(agent_keypair.pubkey())
+    ctx.logger.info(f'{msg.result}. Updated account balance: {balance} SOL')
+
+if __name__ == "__main__":
+    agent.run()
+```
+
+    - Exactly the same flow: read user input, transfer SOL, wait for a response from the Escrow agent.
+
+
+## Utility Script : functions.py
+
+Below is a brief summary of the key utility functions. For full code, see the repository.
+
+```python
+import base58
+from solders.keypair import Keypair
+from solders.pubkey import Pubkey
+from solders.transaction import Transaction
+from solders.system_program import TransferParams, transfer
+from solana.rpc.api import Client
+from solana.rpc.types import TxOpts
+import requests
+
+def get_keypair_details(secret_key_list):
+    """
+    Given a list of secret key bytes (integers), returns a dictionary with the keypair, public key,
+    private key in bytes, and private key in Base58 encoding.
+    """
+
+    # Convert the list of integers into a bytes object (private key)
+    secret_key_bytes = bytes(secret_key_list)
+
+    # Restore the Keypair using the secret key
+    keypair = Keypair.from_bytes(secret_key_bytes)
+
+    # Public key (from keypair)
+    public_key = keypair.pubkey()
+
+    # Private key in Base58 encoding (for readability)
+    private_key_base58 = base58.b58encode(secret_key_bytes).decode()
+
+    # Return all necessary details in a dictionary
+    return {
+        "keypair": keypair,
+        "public_key": public_key,  # Solders Pubkey object
+        "private_key_bytes": secret_key_bytes,  # Private key in bytes
+        "private_key_base58": private_key_base58  # Private key in Base58
+    }
+
+client = Client("https://api.devnet.solana.com")
+
+# Function to check balance
+def check_balance(pubkey):
+    balance_resp = client.get_balance(Pubkey.from_bytes(bytes(pubkey)))
+    print(f'balance_resp :{balance_resp}')
+    balance = balance_resp.value  # Extract balance in lamports
+    return balance / 1_000_000_000  # Convert lamports to SOL
+
+def transfer_sol(from_keypair, to_pubkey_base58, amount_sol):
+    # Convert SOL to lamports (1 SOL = 1 billion lamports)
+    lamports = int(amount_sol * 1_000_000_000)
+
+    # Convert the recipient's Base58 public key string to a Pubkey object
+    to_pubkey = Pubkey.from_string(to_pubkey_base58)
+
+    # Get latest blockhash
+    blockhash_resp = client.get_latest_blockhash()
+    recent_blockhash = blockhash_resp.value.blockhash
+
+    # Create a transfer instruction
+    transfer_instruction = transfer(
+        TransferParams(from_pubkey=from_keypair.pubkey(), to_pubkey=to_pubkey, lamports=lamports)
+    )
+
+    # Create the transaction with the instruction directly
+    transaction = Transaction.new_signed_with_payer(
+        [transfer_instruction],  # Pass the list of instructions directly
+        from_keypair.pubkey(),  # Fee-payer (challenger)
+        [from_keypair],  # Signers (challenger)
+        recent_blockhash  # Use recent blockhash directly
+    )
+
+    # Send the transaction
+    result = client.send_raw_transaction(bytes(transaction), opts=TxOpts(skip_confirmation=False))
+    return result
+
+def get_latest_btc_price():
+    try:
+        # Binance API endpoint for fetching the latest BTC price in USDT
+        url = 'https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT'
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an error for bad responses
+        data = response.json()
+        return float(data['price'])  # Return the latest BTC price as a float
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching BTC price: {e}")
+        return None
+```
+
+## .env File Example
+
+```
+# .env
+
+AGENTVERSE_API_KEY="<Your_FetchAI_Agentverse_Token>"
+
+PLAYER_SECRET_LIST="[79,79,237,8,87,104,75,156,47,204,53,127,171,9,114,244,...]"
+CHALLENGER_SECRET_LIST="[134,53,148,91,88,30,254,53,171,183,219,91,33,67,24,9,65,...]"
+ESCROW_SECRET_LIST="[251,164,58,0,121,167,133,83,114,82,162,22,88,214,195,91,82,...]"
+```
+
+Ensure each secret list matches the integer arrays from your `player-wallet.json`, `challenger-wallet.json`, and `escrow-wallet.json`. Also, do not commit your `.env` to source control.
+
+## Steps to Run the Agents
+
+1. Set Up Virtual Environment & Dependencies
+
+```
+poetry install
+```
+
+2. Fund Each Wallet on Devnet
+
+```
+solana airdrop 5 <PLAYER_PUBKEY> --url devnet
+solana airdrop 5 <CHALLENGER_PUBKEY> --url devnet
+solana airdrop 5 <ESCROW_PUBKEY> --url devnet
+```
+
+3. Start EscrowAgent
+
+```
+poetry run python escrow_agent.py
+```
+
+    - Wait for it to display Escrow agent initialized, ready for bids.
+
+4. Start PlayerAgent
+
+```
+poetry run python player_agent.py
+```
+    - Input the deposit amount & BTC guess when prompted.
+
+5. Start ChallengerAgent
+
+```
+poetry run python challenger_agent.py
+```
+
+    - Similarly input deposit & guess. Once the Escrow receives the second bet, it decides a winner.
+
+### Sample Output
+
+__EscrowAgent:__
+
+```
+INFO: [EscrowAgent]: Escrow agent initialized, ready for bids.
+INFO: [EscrowAgent]: Received escrowRequest message
+INFO: [EscrowAgent]: Storing first request ...
+INFO: [EscrowAgent]: Received escrowRequest message
+INFO: [EscrowAgent]: Storing second request ...
+INFO: [EscrowAgent]: Processing bids to determine the winner.
+INFO: [EscrowAgent]: First difference: 1820.0, Second difference: 586820.0
+INFO: [EscrowAgent]: Transferring 0.9 SOL to winner ...
+INFO: [EscrowAgent]: Notifying winner and loser.
+```
+
+__PlayerAgent:__
+
+```
+What is the amount of SOL you want to deposit? 0.5
+What is the price of Bitcoin you want to bid at? 65000
+INFO: [PlayerAgent]: Transfer result: ...
+INFO: [PlayerAgent]: Final agent balance: 4.31998 SOL
+INFO: [PlayerAgent]: You Won. Updated account balance: 5.21998 SOL
+```
+
+## Debugging Common Issues
+
+1. Key Decoding Errors
+
+    - Ensure your `.env` secret lists are valid JSON arrays of integers.
+    - If you see `ValueError` or `Cannot decode secret key`, confirm you have no trailing commas.
+
+2. Faucet or Balance Issues
+
+    - Double-check `solana balance <PUBKEY> --url devnet`. If less then 1 SOL, some transactions might fail due to insufficient lamports for fees.
+
+3. Agent Registration Problems
+
+    - Confirm __AGENTVERSE_API_KEY__ is correct in your `.env`.
+    - Make sure each agent can reach the default Almanac endpoint (requires internet connection).
+
+4. BTC Price Fetch Errors
+
+    - If Binance is unreachable or rate-limits your IP, consider adding retry logic or a fallback endpoint.
+
+
+By following this __Solana + uAgents__ guide, you’ve set up three distinct agents that:
+
+    - Load private keys from .env
+    - Register on Fetch.ai’s Almanac for discovery
+    - Communicate using @agent.on_message and typed models (escrowRequest, escrowResponse)
+    - Interact with Solana Devnet for safe, low-cost experimentation
+
+This architecture can be extended for __NFT auctions, DeFi ops, cross-chain bridging__, or any scenario where you need __agent-driven__ logic plus on-chain Solana transactions. Enjoy building!
+
+:::note
+**Note:** GitHub repository for this example is available [here](https://github.com/abhifetch/solana-fetch-uagents-integration).
+:::
