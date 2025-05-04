@@ -1,17 +1,22 @@
 # NOTE: To run this agent, use: python -m agents.alert_agent from the project root.
 import os
 from datetime import datetime
-from typing import Optional
-
 import aiohttp
-from pydantic import BaseModel, Field
 from uagents import Agent, Context
 from uagents_core.contrib.protocols.chat import (
     ChatMessage, ChatAcknowledgement, TextContent, chat_protocol_spec
 )
 from uagents import Protocol
+from pydantic import BaseModel
+from datetime import datetime
 
-from .message_models import AlertMsg, AckMsg
+class AlertMsg(BaseModel):
+    symbol: str
+    price: float
+    timestamp: datetime
+
+class AckMsg(BaseModel):
+    detail: str
 
 # Webhook URL for sending alerts
 WEBHOOK_URL = "https://arootah.app.n8n.cloud/webhook-test/alert_agent"
@@ -24,12 +29,12 @@ AGENT_ENDPOINT = f"http://localhost:{AGENT_PORT}/submit"
 # Create the agent
 alert_agent = Agent(
     name="alert-agent",
+    mailbox=True,
     seed=AGENT_SEED,
     port=AGENT_PORT,
     endpoint=AGENT_ENDPOINT,
 )
-# Add endpoint to silence "Agent won’t be reachable" warning
-alert_agent.add_endpoint("http://127.0.0.1:8100")
+# Endpoint is already set via the constructor above.
 
 # Create chat protocol instance
 chat_proto = Protocol(spec=chat_protocol_spec)

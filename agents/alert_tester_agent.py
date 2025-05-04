@@ -1,9 +1,17 @@
 # NOTE: To run this agent, use: python -m agents.alert_tester_agent from the project root.
 import asyncio
 from datetime import datetime
-from pydantic import BaseModel, Field
 from uagents import Agent, Context
-from .message_models import AlertMsg, AckMsg
+from pydantic import BaseModel
+from datetime import datetime
+
+class AlertMsg(BaseModel):
+    symbol: str
+    price: float
+    timestamp: datetime = None
+
+class AckMsg(BaseModel):
+    detail: str
 
 
 # The address of alert_agent is deterministic from its seed
@@ -13,8 +21,6 @@ ALERT_AGENT_ADDRESS = Agent(seed=ALERT_AGENT_SEED).address
 # Create the tester agent
 tester_agent = Agent(name="alert_tester")
 
-# Add endpoint to silence "Agent won’t be reachable" warning
-tester_agent.add_endpoint("http://127.0.0.1:8101")
 
 @tester_agent.on_event("startup")
 async def send_alert(ctx: Context):

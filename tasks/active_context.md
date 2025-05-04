@@ -1,0 +1,3 @@
+# Active Development Context
+
+The current focus is on establishing the project’s memory bank, which involves creating and maintaining core documentation and tracking files to support ongoing development. Once the memory files are in place, the next likely actions will be to expand the agent documentation, add more guides and examples, and begin testing and refining the implemented agents. This will ensure a strong foundation for future improvements and collaborative development.

@@ -1,9 +1,17 @@
----
-description: Document major failure points in this project and they were solved.  To be filled by AI.
-globs: 
-alwaysApply: false
----
----
-description: Document major failure points in this project and they were solved.  To be filled by AI. 
-globs: 
----
+# Error Documentation
+
+## [2025-05-03] AttributeError in alert_tester_agent.py during alerting flow test
+
+**Context:**  
+While testing the alerting flow between `alert_agent` and `alert_tester_agent` (running `python agents/alert_tester_agent.py`), the following error occurred:
+
+**Error Details:**  
+Traceback (most recent call last):
+  File "/Users/raedmarji/Documents/GitHub/fetch_ai_hackathon/agents/alert_tester_agent.py", line 25, in <module>
+    tester_agent.add_endpoint("http://127.0.0.1:8101")
+AttributeError: 'Agent' object has no attribute 'add_endpoint'. Did you mean: '_endpoints'?
+
+**Status:**  
+- The alerting test failed due to this error.
+- Task "Implement alert_agent & alert_tester_agent" remains In Progress in `tasks/tasks_plan.md`.
+- Resolution pending: code fix required in `alert_tester_agent.py`.
