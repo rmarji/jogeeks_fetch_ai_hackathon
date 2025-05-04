@@ -1,2 +1,18 @@
 fetch_ai_env/
 fetch_ai_env*/
+# Ignore private key files and directories
+privatekeys
+privatekeys/
+private_keys
+private_keys/
+privatekey
+privatekey/
+private_key
+private_key/
+privatekey.*
+private_key.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.asc
